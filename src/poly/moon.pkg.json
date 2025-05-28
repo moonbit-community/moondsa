@@ -1,6 +1,5 @@
 {
   "import": [
-    "ruifeng/dilithium/fips202",
     "ruifeng/dilithium/params"
   ]
 }

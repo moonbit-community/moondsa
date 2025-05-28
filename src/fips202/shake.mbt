@@ -1,37 +1,71 @@
 ///| Reference: https://github.com/Argyle-Software/dilithium/blob/master/src/fips202.rs
+///
+/// SHAKE128 and SHAKE256 Extendable-Output Functions (XOF) Implementation
+/// SHAKE128 和 SHAKE256 可扩展输出函数 (XOF) 的实现
+///
+/// This file implements the SHAKE128 and SHAKE256 extendable-output functions
+/// based on the Keccak algorithm, which forms the foundation of SHA-3.
+/// 本文件基于 Keccak 算法实现 SHAKE128 和 SHAKE256 可扩展输出函数，
+/// Keccak 算法是 SHA-3 的基础。
+///
+/// ## Keccak Algorithm Overview (Sponge Construction)
+/// ## Keccak 算法概览（海绵结构）
 /// 
-/// 
+/// The Keccak algorithm operates as a sponge construction with three main phases:
+/// Keccak 算法采用海绵结构，包含三个主要阶段：
+///
+/// 1. **Absorbing Phase**: Input data is absorbed into a fixed-size state.
+///    **吸收阶段**：输入数据被吸收到固定大小的状态中。
+///    Data is processed in blocks, with permutation applied after each block.
+///    数据以块为单位处理，每个块处理后都会进行一次置换。
+///
+/// 2. **Finalizing Phase**: Padding is added to mark the end of input.
+///    **完成阶段**：添加填充以标记输入的结束。
+///    This prepares the state for the squeezing phase.
+///    这为挤压阶段准备状态。
+///
+/// 3. **Squeezing Phase**: Output data is squeezed from the state.
+///    **挤压阶段**：从状态中挤压出输出数据。
+///    Permutation is applied as needed to generate more output.
+///    根据需要进行置换以生成更多输出。
+///
+/// SHAKE functions are XOFs, meaning they can produce output of any desired length.
+/// SHAKE 函数是 XOF，意味着它们可以产生任意所需长度的输出。
+
+///| SHAKE128 rate (block size) in bytes | SHAKE128 的比特率（块大小），以字节为单位
 pub const SHAKE128_RATE : UInt = 168
 
-///|
+///| SHAKE256 rate (block size) in bytes | SHAKE256 的比特率（块大小），以字节为单位
 pub const SHAKE256_RATE : UInt = 136
 
-///|
+///| Number of rounds in Keccak-f[1600] permutation | Keccak-f[1600] 置换的轮数
 const NROUNDS : Int = 24
 
-///|
+///| Keccak state structure | Keccak 状态结构
+/// Contains the 5x5 state array and current position
+/// 包含 5x5 状态数组和当前位置
 pub struct KeccakState {
-  s : FixedArray[UInt64]
-  mut pos : UInt
+  s : FixedArray[UInt64] // 25-element flattened state array | 25 元素的展平状态数组
+  mut pos : UInt // Current position in the rate block | 当前在比特率块中的位置
 } derive(Show)
 
-///|
+///| Default initialization for KeccakState | KeccakState 的默认初始化
 impl Default for KeccakState with default() {
   { s: FixedArray::make(25, 0), pos: 0 }
 }
 
-///|
+///| Initialize Keccak state to all zeros | 将 Keccak 状态初始化为全零
 pub fn KeccakState::init(self : KeccakState) -> Unit {
   self.s.fill(0)
   self.pos = 0
 }
 
-///|
+///| Circular left rotation on 64-bit integer | 64 位整数的循环左移
 fn KeccakState::rol(a : UInt64, offset : Int) -> UInt64 {
   (a << offset) | (a >> (64 - offset))
 }
 
-///|
+///| Load 64-bit integer from 8-byte array (little-endian) | 从 8 字节数组加载 64 位整数（小端序）
 pub fn load64(x : Array[Byte]) -> UInt64 {
   let mut r = 0UL
   for i in 0..<8 {
@@ -41,14 +75,14 @@ pub fn load64(x : Array[Byte]) -> UInt64 {
   r
 }
 
-///|
+///| Store 64-bit integer to 8-byte array (little-endian) | 将 64 位整数存储到 8 字节数组（小端序）
 pub fn store64(x : Array[Byte], u : UInt64) -> Unit {
   for i in 0..<8 {
     x[i] = (u >> (8 * i)).to_byte()
   }
 }
 
-///|
+///| Round constants for Keccak-f[1600] permutation | Keccak-f[1600] 置换的轮常数
 let keccakf_round_constants = [
   0x0000000000000001UL, 0x0000000000008082UL, 0x800000000000808aUL, 0x8000000080008000UL,
   0x000000000000808bUL, 0x0000000080000001UL, 0x8000000080008081UL, 0x8000000000008009UL,
@@ -58,9 +92,11 @@ let keccakf_round_constants = [
   0x8000000080008081UL, 0x8000000000008080UL, 0x0000000080000001UL, 0x8000000080008008UL,
 ]
 
-///| The Keccak F1600 Permutation
+///| Keccak-f[1600] permutation function | Keccak-f[1600] 置换函数
+/// Applies the complete Keccak permutation to the state
+/// 对状态应用完整的 Keccak 置换
 pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
-  //copyFromState(A, state)
+  // Copy state to local variables for processing | 将状态复制到局部变量进行处理
   let mut aba = state[0]
   let mut abe = state[1]
   let mut abi = state[2]
@@ -88,14 +124,14 @@ pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
   let mut asu = state[24]
   let mut round = 0
   while round < NROUNDS {
-    //    prepareTheta
+    // Theta step: compute column parities | Theta 步：计算列奇偶性
     let mut bca = aba ^ aga ^ aka ^ ama ^ asa
     let mut bce = abe ^ age ^ ake ^ ame ^ ase
     let mut bci = abi ^ agi ^ aki ^ ami ^ asi
     let mut bco = abo ^ ago ^ ako ^ amo ^ aso
     let mut bcu = abu ^ agu ^ aku ^ amu ^ asu
 
-    //thetaRhoPiChiIotaPrepareTheta(round  , A, E)
+    // Combined Rho, Pi, Chi, Iota steps | 组合的 Rho, Pi, Chi, Iota 步骤
     let mut da = bcu ^ KeccakState::rol(bce, 1)
     let mut de = bca ^ KeccakState::rol(bci, 1)
     let mut di = bce ^ KeccakState::rol(bco, 1)
@@ -178,14 +214,14 @@ pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
     let mut eso = bco ^ (bcu.lnot() & bca)
     let mut esu = bcu ^ (bca.lnot() & bce)
 
-    //    prepareTheta
+    // Second theta step | 第二个 theta 步骤
     bca = eba ^ ega ^ eka ^ ema ^ esa
     bce = ebe ^ ege ^ eke ^ eme ^ ese
     bci = ebi ^ egi ^ eki ^ emi ^ esi
     bco = ebo ^ ego ^ eko ^ emo ^ eso
     bcu = ebu ^ egu ^ eku ^ emu ^ esu
 
-    //thetaRhoPiChiIotaPrepareTheta(round+1, E, A)
+    // Second combined step | 第二个组合步骤
     da = bcu ^ KeccakState::rol(bce, 1)
     de = bca ^ KeccakState::rol(bci, 1)
     di = bce ^ KeccakState::rol(bco, 1)
@@ -267,8 +303,9 @@ pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
     asi = bci ^ (bco.lnot() & bcu)
     aso = bco ^ (bcu.lnot() & bca)
     asu = bcu ^ (bca.lnot() & bce)
-    round += 2
+    round += 2 // Process two rounds at once | 一次处理两轮
   }
+  // Copy back to state | 复制回状态数组
   state[0] = aba
   state[1] = abe
   state[2] = abi
@@ -296,7 +333,9 @@ pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
   state[24] = asu
 }
 
-///|
+///| Incremental absorb for Keccak | Keccak 的增量吸收
+/// Processes input data in blocks, updating the state incrementally
+/// 以块为单位处理输入数据，增量更新状态
 fn keccak_absorb(
   state : KeccakState,
   r : UInt,
@@ -307,42 +346,46 @@ fn keccak_absorb(
   let mut pos = state.pos
   let mut inlen = inlen
   while pos + inlen >= r {
+    // Fill current block and permute | 填充当前块并置换
     for i in pos..<r {
-      let i = i.reinterpret_as_int()
-      state.s[i / 8] = state.s[i / 8] ^
-        (input[idx].to_uint64() << (8 * (i % 8)))
+      let index = (i >> 3).reinterpret_as_int()
+      let offset = (i & 7).reinterpret_as_int()
+      state.s[index] = state.s[index] ^ (input[idx].to_uint64() << (8 * offset))
       idx += 1
     }
     inlen -= r - pos
     keccakf1600_statepermute(state.s)
     pos = 0
   }
+  // Absorb remaining partial block | 吸收剩余的部分块
   for i in pos..<(pos + inlen) {
-    let i = i.reinterpret_as_int()
-    state.s[i / 8] = state.s[i / 8] ^ (input[idx].to_uint64() << (8 * (i % 8)))
+    let index = (i >> 3).reinterpret_as_int()
+    let offset = (i & 7).reinterpret_as_int()
+    state.s[index] = state.s[index] ^ (input[idx].to_uint64() << (8 * offset))
     idx += 1
   }
   state.pos = pos + inlen
 }
 
-///| Finalize absorb state
+///| Finalize absorb phase | 完成吸收阶段
+/// Adds padding and termination bits to mark end of input
+/// 添加填充和终止位以标记输入结束
 fn keccak_finalize(
   s : FixedArray[UInt64],
   pos : UInt,
   r : UInt,
   p : Byte
 ) -> Unit {
-  let pos = pos.reinterpret_as_int()
-  let r = r.reinterpret_as_int()
-  s[pos / 8] = s[pos / 8] ^ (p.to_uint64() << (8 * (pos % 8)))
-  s[r / 8 - 1] = s[r / 8 - 1] ^ (1UL << 63)
+  let index = (pos >> 3).reinterpret_as_int()
+  let offset = (pos & 7).reinterpret_as_int()
+  s[index] = s[index] ^ (p.to_uint64() << (8 * offset))
+  let index = ((r >> 3) - 1).reinterpret_as_int()
+  s[index] = s[index] ^ (1UL << 63)
 }
 
-///| Squeeze step of Keccak. Squeezes arbitratrily many bytes.
-///  Modifies the state. Can be called multiple times to keep
-///  squeezing, i.e., is incremental.
-///
-// Returns new position pos in current block
+///| Incremental squeeze for Keccak | Keccak 的增量挤压
+/// Extracts output bytes from state, permuting as needed
+/// 从状态中提取输出字节，根据需要进行置换
 fn keccak_squeeze(
   out : ArrayView[Byte],
   outlen : UInt,
@@ -354,14 +397,16 @@ fn keccak_squeeze(
   let mut outlen = outlen
   while outlen != 0 {
     if pos == r {
+      // Permute state when current block is exhausted | 当前块用尽时置换状态
       keccakf1600_statepermute(s)
       pos = 0
     }
     let mut i = pos
     let mut idx = 0
     while i < r && i < pos + outlen {
-      let j = i.reinterpret_as_int()
-      out[idx] = (s[j / 8] >> (8 * (j % 8))).to_byte()
+      let index = (i >> 3).reinterpret_as_int()
+      let offset = (i & 7).reinterpret_as_int()
+      out[idx] = (s[index] >> (8 * offset)).to_byte()
       idx += 1
       i += 1
     }
@@ -371,8 +416,9 @@ fn keccak_squeeze(
   return pos
 }
 
-///| Absorb step of Keccak;
-/// non-incremental, starts by zeroeing the state.
+///| Non-incremental absorb for Keccak | Keccak 的非增量吸收
+/// Initializes state, absorbs all input, and finalizes in one go
+/// 初始化状态，吸收所有输入，并一次性完成
 fn keccak_absorb_once(
   s : FixedArray[UInt64],
   r : UInt,
@@ -385,6 +431,7 @@ fn keccak_absorb_once(
   let mut idx = 0
   s.fill(0)
   while inlen >= r {
+    // Process full blocks | 处理完整块
     for i in 0..<(r / 8) {
       let start = idx + 8 * i
       s[i] = s[i] ^ load64(input[start:start + 8].to_array())
@@ -393,6 +440,7 @@ fn keccak_absorb_once(
     inlen -= r
     keccakf1600_statepermute(s)
   }
+  // Absorb partial block and add padding | 吸收部分块并添加填充
   for i in 0..<inlen {
     s[i / 8] = s[i / 8] ^ (input[idx + i].to_uint64() << (8 * (i % 8)))
   }
@@ -400,10 +448,9 @@ fn keccak_absorb_once(
   s[(r - 1) / 8] = s[(r - 1) / 8] ^ (1UL << 63)
 }
 
-///| Squeeze step of Keccak. Squeezes full blocks of r bytes each.
-///  Modifies the state. Can be called multiple times to keep
-///  squeezing, i.e., is incremental. Assumes zero bytes of current
-///  block have already been squeezed.
+///| Squeeze full blocks from Keccak | 从 Keccak 挤压完整块
+/// Extracts multiple full blocks of output data
+/// 提取多个完整的输出数据块
 fn keccak_squeezeblocks(
   out : Array[Byte],
   nblocks : UInt,
@@ -415,6 +462,7 @@ fn keccak_squeezeblocks(
   let mut idx = 0
   while nblocks > 0 {
     keccakf1600_statepermute(s)
+    // Extract full block | 提取完整块
     for i in 0..<(r >> 3) {
       let arr : Array[Byte] = Array::make(8, 0)
       store64(arr, s[i])
@@ -427,7 +475,9 @@ fn keccak_squeezeblocks(
   }
 }
 
-///| Description: Absorb step of the SHAKE128 XOF; incremental.
+///| SHAKE128 incremental absorb | SHAKE128 增量吸收
+/// Absorbs input data into SHAKE128 state
+/// 将输入数据吸收到 SHAKE128 状态中
 pub fn shake128_absorb(
   state : KeccakState,
   input : Array[Byte],
@@ -436,16 +486,17 @@ pub fn shake128_absorb(
   keccak_absorb(state, SHAKE128_RATE, input, inlen)
 }
 
-///| Finalize absorb step of the SHAKE128 XOF.
+///| SHAKE128 finalize | SHAKE128 完成
+/// Finalizes SHAKE128 absorb phase with proper padding
+/// 使用适当的填充完成 SHAKE128 吸收阶段
 pub fn shake128_finalize(state : KeccakState) -> Unit {
   keccak_finalize(state.s, state.pos, SHAKE128_RATE, 0x1F)
   state.pos = SHAKE128_RATE
 }
 
-///| Squeeze step of SHAKE128 XOF. Squeezes full blocks of
-///  SHAKE128_RATE bytes each. Can be called multiple times
-///  to keep squeezing. Assumes new block has not yet been
-///  started (state->pos = SHAKE128_RATE).
+///| SHAKE128 squeeze blocks | SHAKE128 挤压块
+/// Squeezes full blocks from SHAKE128 state
+/// 从 SHAKE128 状态挤压完整块
 pub fn shake128_squeezeblocks(
   output : Array[Byte],
   nblocks : UInt,
@@ -454,7 +505,9 @@ pub fn shake128_squeezeblocks(
   keccak_squeezeblocks(output, nblocks, s.s, SHAKE128_RATE)
 }
 
-///| Absorb step of the SHAKE256 XOF; incremental.
+///| SHAKE256 incremental absorb | SHAKE256 增量吸收
+/// Absorbs input data into SHAKE256 state
+/// 将输入数据吸收到 SHAKE256 状态中
 pub fn shake256_absorb(
   state : KeccakState,
   input : Array[Byte],
@@ -463,14 +516,17 @@ pub fn shake256_absorb(
   keccak_absorb(state, SHAKE256_RATE, input, inlen)
 }
 
-///| Finalize absorb step of the SHAKE256 XOF.*/
+///| SHAKE256 finalize | SHAKE256 完成
+/// Finalizes SHAKE256 absorb phase with proper padding
+/// 使用适当的填充完成 SHAKE256 吸收阶段
 pub fn shake256_finalize(state : KeccakState) -> Unit {
   keccak_finalize(state.s, state.pos, SHAKE256_RATE, 0x1F)
   state.pos = SHAKE256_RATE
 }
 
-///|Squeeze step of SHAKE256 XOF. Squeezes arbitraily many
-/// bytes. Can be called multiple times to keep squeezing.
+///| SHAKE256 squeeze arbitrary bytes | SHAKE256 挤压任意字节
+/// Squeezes any number of bytes from SHAKE256 state
+/// 从 SHAKE256 状态挤压任意数量的字节
 pub fn shake256_squeeze(
   out : ArrayView[Byte],
   outlen : UInt,
@@ -479,7 +535,9 @@ pub fn shake256_squeeze(
   state.pos = keccak_squeeze(out, outlen, state.s, state.pos, SHAKE256_RATE)
 }
 
-///| Initialize, absorb into and finalize SHAKE256 XOF; non-incremental.
+///| SHAKE256 one-shot absorb | SHAKE256 一次性吸收
+/// Non-incremental SHAKE256 absorb for convenience
+/// 为方便使用的非增量 SHAKE256 吸收
 pub fn shake256_absorb_once(
   state : KeccakState,
   input : Array[Byte],
@@ -489,10 +547,9 @@ pub fn shake256_absorb_once(
   state.pos = SHAKE256_RATE
 }
 
-///| Squeeze step of SHAKE256 XOF. Squeezes full blocks of
-///              SHAKE256_RATE bytes each. Can be called multiple times
-///              to keep squeezing. Assumes next block has not yet been
-///              started (state.pos = SHAKE256_RATE).
+///| SHAKE256 squeeze blocks | SHAKE256 挤压块
+/// Squeezes full blocks from SHAKE256 state
+/// 从 SHAKE256 状态挤压完整块
 pub fn shake256_squeezeblocks(
   out : Array[Byte],
   nblocks : UInt,
@@ -501,7 +558,9 @@ pub fn shake256_squeezeblocks(
   keccak_squeezeblocks(out, nblocks, state.s, SHAKE256_RATE)
 }
 
-///| SHAKE256 XOF with non-incremental API
+///| SHAKE256 complete operation | SHAKE256 完整操作
+/// Performs complete SHAKE256 hash: absorb input and squeeze output
+/// 执行完整的 SHAKE256 哈希：吸收输入并挤压输出
 pub fn shake256(
   output : Array[Byte],
   outlen : UInt,
