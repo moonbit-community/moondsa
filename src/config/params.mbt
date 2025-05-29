@@ -7,6 +7,18 @@ pub const Q = 8380417 // modulus of the polynomial ring Z_q(X^n + 1)
 ///|
 pub const D = 13 // degree of the polynomial
 
+///| SHAKE128 rate (block size) in bytes | SHAKE128 的比特率（块大小），以字节为单位
+pub const SHAKE128_RATE : UInt = 168
+
+///| SHAKE256 rate (block size) in bytes | SHAKE256 的比特率（块大小），以字节为单位
+pub const SHAKE256_RATE : UInt = 136
+
+///|
+pub const STREAM128_BLOCKBYTES : UInt = SHAKE128_RATE
+
+///|
+pub const STREAM256_BLOCKBYTES : UInt = SHAKE256_RATE
+
 ///|
 pub(all) enum SecurityLevel {
   Dilithium2

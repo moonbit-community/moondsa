@@ -1,7 +1,7 @@
 ///|
 struct DilithiumContext {
   mut params_set : ParameterSet
-  random : @random.Rand
+  mut random : @random.Rand
 }
 
 ///| 
@@ -32,6 +32,14 @@ pub fn DilithiumContext::get_params_set(
   self : DilithiumContext
 ) -> ParameterSet {
   self.params_set
+}
+
+///|
+pub fn DilithiumContext::set_random(
+  self : DilithiumContext,
+  random : @random.Rand
+) -> Unit {
+  self.random = random
 }
 
 ///|

@@ -50,7 +50,7 @@ pub struct KeccakState {
 } derive(Show)
 
 ///| Default initialization for KeccakState | KeccakState 的默认初始化
-impl Default for KeccakState with default() {
+pub impl Default for KeccakState with default() {
   { s: FixedArray::make(25, 0), pos: 0 }
 }
 
@@ -452,7 +452,7 @@ fn keccak_absorb_once(
 /// Extracts multiple full blocks of output data
 /// 提取多个完整的输出数据块
 fn keccak_squeezeblocks(
-  out : Array[Byte],
+  out : ArrayView[Byte],
   nblocks : UInt,
   s : FixedArray[UInt64],
   r : UInt
@@ -498,7 +498,7 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 /// Squeezes full blocks from SHAKE128 state
 /// 从 SHAKE128 状态挤压完整块
 pub fn shake128_squeezeblocks(
-  output : Array[Byte],
+  output : ArrayView[Byte],
   nblocks : UInt,
   s : KeccakState
 ) -> Unit {
