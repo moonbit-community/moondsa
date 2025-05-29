@@ -1,5 +1,5 @@
 ///| Q = 8380417, NTT 的模数，也是多项式环的模数
-const Q : Int = @params.Q
+const Q : Int = @config.Q
 
 ///| F = (R^2 / N) mod Q = 41978
 /// F is used in INTT to normalize coefficients and maintain Montgomery domain
@@ -12,7 +12,7 @@ const F : Int64 = 41978 // (R ^ {2} / N) % Q
 /// 
 /// zetas[i] = r^{bit_reverse(i, 8)} * R mod Q 
 /// where / 其中:
-/// - r is root of unity(原根), r^{2N} = 1 mod Q
+/// - r is root of unity(原根), r^{2N} = 1 mod Q, r = 1753
 /// - R = 2^32 mod Q = 4193792 (Montgomery parameter / 蒙哥马利参数)
 /// - bit_reverse(i, 8): 8-bit bit reversal of i / i 的 8 位比特翻转
 /// 
@@ -125,7 +125,7 @@ pub fn ntt(a : Array[Int]) -> Unit {
 /// - Output is in standard order / 输出为标准顺序
 /// - Output coefficients < Q in absolute value / 输出系数绝对值 < Q
 /// - Result remains in Montgomery domain / 结果保持在蒙哥马利域中
-pub fn inv_ntt(a : Array[Int]) -> Unit {
+pub fn inv_ntt_to_mont(a : Array[Int]) -> Unit {
   let mut k = 256 // Start from end of twiddle factors array / 从旋转因子数组末尾开始
 
   // Iterate through all INTT levels in reverse order
@@ -157,7 +157,7 @@ pub fn inv_ntt(a : Array[Int]) -> Unit {
     // 乘以 F = (R^2 / N) mod Q 以实现三个目标：
     // 1. Divide by N: normalize the inverse transform / 除以 N：归一化逆变换
     // 2. Multiply by the first R: keep coefficients in Montgomery domain / 乘以第一个R：保持系数在蒙哥马利域
-    // 3. Multiply by the second R: compensate for Montgomery reduction / 乘以第二个R：补偿蒙哥马利约简
+    // 3. Multiply by the second R: compensate for Montgomery reduction / 乘以R：补偿蒙哥马利约简
     // Final result: a[i] = (original_a[i] / N) * R mod Q (in Montgomery domain)
     // 最终结果：a[i] = (原始_a[i] / N) * R mod Q（在蒙哥马利域中）
     a[i] = montgomery_reduce(F * a[i].to_int64())
@@ -280,6 +280,6 @@ test "inv_ntt" {
     1716289, -3253036, -1302754, 2500212, -1918240, 1201565, -1106518, 743553, 902331,
     804710, -3047027, 3654086, 911638, 3708051,
   ]
-  inv_ntt(a)
+  inv_ntt_to_mont(a)
   inspect!(a, content=a_output.to_string())
 }

@@ -1,5 +1,6 @@
 {
   "import": [
-    "ruifeng/dilithium/params"
+    "ruifeng/dilithium/config",
+    "ruifeng/dilithium/utils"
   ]
 }
