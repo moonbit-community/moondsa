@@ -6,6 +6,8 @@ pub const Q = 8380417 // modulus of the polynomial ring Z_q(X^n + 1)
 
 ///|
 pub const D = 13 // degree of the polynomial
+pub const SEEDBYTES = 32
+pub const CRHBYTES = 64
 
 ///| SHAKE128 rate (block size) in bytes | SHAKE128 的比特率（块大小），以字节为单位
 pub const SHAKE128_RATE : UInt = 168

@@ -1,5 +1,4 @@
 ///| Q = 8380417, NTT 的模数，也是多项式环的模数
-const Q : Int = @config.Q
 
 ///| F = (R^2 / N) mod Q = 41978
 /// F is used in INTT to normalize coefficients and maintain Montgomery domain
@@ -213,7 +212,7 @@ test "ntt" {
     -5819081, -8499759, 521737, -7231469, -4117257, -5370457, -6235069, 314971,
   ]
   ntt(a)
-  inspect!(a, content=a_output.to_string())
+  inspect(a, content=a_output.to_string())
 }
 
 ///|
@@ -281,5 +280,5 @@ test "inv_ntt" {
     804710, -3047027, 3654086, 911638, 3708051,
   ]
   inv_ntt_to_mont(a)
-  inspect!(a, content=a_output.to_string())
+  inspect(a, content=a_output.to_string())
 }

@@ -33,10 +33,10 @@
 /// SHAKE 函数是 XOF，意味着它们可以产生任意所需长度的输出。
 
 ///| SHAKE128 rate (block size) in bytes | SHAKE128 的比特率（块大小），以字节为单位
-pub const SHAKE128_RATE : UInt = 168
+// pub const SHAKE128_RATE : UInt = 168
 
 ///| SHAKE256 rate (block size) in bytes | SHAKE256 的比特率（块大小），以字节为单位
-pub const SHAKE256_RATE : UInt = 136
+// pub const SHAKE256_RATE : UInt = 136
 
 ///| Number of rounds in Keccak-f[1600] permutation | Keccak-f[1600] 置换的轮数
 const NROUNDS : Int = 24
@@ -562,9 +562,9 @@ pub fn shake256_squeezeblocks(
 /// Performs complete SHAKE256 hash: absorb input and squeeze output
 /// 执行完整的 SHAKE256 哈希：吸收输入并挤压输出
 pub fn shake256(
-  output : Array[Byte],
+  output~ : Array[Byte],
   outlen : UInt,
-  input : Array[Byte],
+  input~ : Array[Byte],
   inlen : UInt
 ) -> Unit {
   let mut outlen = outlen
@@ -575,4 +575,70 @@ pub fn shake256(
   outlen -= nblocks * SHAKE256_RATE
   let idx = nblocks * SHAKE256_RATE
   shake256_squeeze(output[idx.reinterpret_as_int():], outlen, state)
+}
+
+
+///|这里主要定义了一些外部api,同时为将来支持aes做准备
+
+
+///|
+pub fn stream128_init(
+  state : KeccakState,
+  seed : Array[Byte],
+  nonce : UInt16
+) -> Unit {
+  dilithium_shake128_stream_init(state, seed, nonce)
+}
+
+///|
+pub fn stream128_squeezeblocks(
+  out : ArrayView[Byte],
+  outblocks : UInt64,
+  state : KeccakState
+) -> Unit {
+  shake128_squeezeblocks(out, outblocks.to_uint(), state)
+}
+
+///|
+pub fn dilithium_shake128_stream_init(
+  state : KeccakState,
+  seed : Array[Byte],
+  nonce : UInt16
+) -> Unit {
+  let t = [nonce.to_byte(), (nonce >> 8).to_byte()]
+  state.init()
+  shake128_absorb(state, seed, SEEDBYTES.reinterpret_as_uint())
+  shake128_absorb(state, t, 2)
+  shake128_finalize(state)
+}
+
+///|
+pub fn stream256_init(
+  state : KeccakState,
+  seed : Array[Byte],
+  nonce : UInt16
+) -> Unit {
+  dilithium_shake256_stream_init(state, seed, nonce)
+}
+
+///|
+pub fn stream256_squeezeblocks(
+  out : Array[Byte],
+  outblocks : UInt64,
+  state : KeccakState
+) -> Unit {
+  shake256_squeezeblocks(out, outblocks.to_uint(), state)
+}
+
+///|
+pub fn dilithium_shake256_stream_init(
+  state : KeccakState,
+  seed : Array[Byte],
+  nonce : UInt16
+) -> Unit {
+  let t = [nonce.to_byte(), (nonce >> 8).to_byte()]
+  state.init()
+  shake256_absorb(state, seed, SEEDBYTES.reinterpret_as_uint())
+  shake256_absorb(state, t, 2)
+  shake256_finalize(state)
 }

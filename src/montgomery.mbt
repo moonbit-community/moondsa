@@ -32,8 +32,8 @@ pub fn caddq(a : Int) -> Int {
 
 ///|
 test "caddq" {
-  inspect!(caddq(-10), content="\{Q - 10}")
-  inspect!(caddq(-1), content="\{Q - 1}")
-  inspect!(caddq(0), content="0")
-  inspect!(caddq(1), content="1")
+  inspect(caddq(-10), content="\{Q - 10}")
+  inspect(caddq(-1), content="\{Q - 1}")
+  inspect(caddq(0), content="0")
+  inspect(caddq(1), content="1")
 }

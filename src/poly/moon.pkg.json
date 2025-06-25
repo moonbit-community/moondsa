@@ -1,7 +1,0 @@
-{
-  "import": [
-    "ruifeng/dilithium/config",
-    "ruifeng/dilithium/utils",
-    "ruifeng/dilithium/hash"
-  ]
-}

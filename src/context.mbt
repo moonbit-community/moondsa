@@ -1,3 +1,4 @@
+
 ///|
 struct DilithiumContext {
   mut params_set : ParameterSet
@@ -16,7 +17,7 @@ fn DilithiumContext::new(
 ///| default random is very dangerous, please use your own random source
 pub let dilithium_context : DilithiumContext = DilithiumContext::new(
   Dilithium3,
-  @random.new(),
+  @random.Rand::new(),
 ) // default level
 
 ///|

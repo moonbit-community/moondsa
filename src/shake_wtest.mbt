@@ -6,7 +6,7 @@ fn bytes_to_hex(bytes : Array[Byte]) -> String {
   let mut result = ""
   for i in 0..<bytes.length() {
     let byte_val = bytes[i].to_int()
-    let hex_chars = "0123456789abcdef"
+    let hex_chars = "0123456789abcdef".to_array()
     let high = hex_chars[byte_val >> 4] // 右移4位
     let low = hex_chars[byte_val & 0x0F]
     result = result + high.to_string() + low.to_string()
@@ -35,7 +35,7 @@ test "test_shake128_empty_16" {
   // NIST test vector for SHAKE128("", 16)
   let expected = "7f9c2ba4e88f827d616045507605853e"
   let actual = bytes_to_hex(output[0:16].to_array())
-  inspect!(actual, content=expected)
+  inspect(actual, content=expected)  
 }
 
 ///| Test SHAKE128 with "MoonBit Community" input | 测试字符串输入的 SHAKE128
@@ -48,7 +48,7 @@ test "test_shake128_moonbit" {
   shake128_squeezeblocks(output, 1, state)
   let expected = "677fd5abd26006e8" // First 8 bytes
   let actual = bytes_to_hex(output[0:8].to_array())
-  inspect!(actual, content=expected)
+  inspect(actual, content=expected)
 }
 
 ///| Test SHAKE256 with empty input, 16-byte output | 测试空输入的 SHAKE256，输出 16 字节
@@ -62,17 +62,17 @@ test "test_shake256_empty_16" {
   // NIST test vector for SHAKE256("", 16)
   let expected = "46b9dd2b0ba88d13233b3feb743eeb24"
   let actual = bytes_to_hex(output)
-  inspect!(actual, content=expected)
+  inspect(actual, content=expected)
 }
 
 ///| Test SHAKE256 with "MoonBit Community" input | 测试字符串输入的 SHAKE256
 test "test_shake256_moonbit" {
   let input = string_to_bytes("MoonBit Community")
   let output : Array[Byte] = Array::make(64, 0)
-  shake256(output, 64, input, input.length().reinterpret_as_uint())
+  shake256(output=output, 64, input=input, input.length().reinterpret_as_uint())
   let expected = "5d8bf49503d49e78" // First 8 bytes
   let actual = bytes_to_hex(output[0:8].to_array())
-  inspect!(actual, content=expected)
+  inspect(actual, content=expected)
 }
 
 ///| Test SHAKE128 incremental absorb | 测试 SHAKE128 增量吸收
@@ -99,7 +99,7 @@ test "test_shake128_incremental_absorb" {
   shake256_squeeze(output2[:], 32, state2)
   let result1 = bytes_to_hex(output1)
   let result2 = bytes_to_hex(output2)
-  inspect!(result1 == result2, content="true")
+  inspect(result1 == result2, content="true")
 }
 
 ///| Test SHAKE256 incremental squeeze | 测试 SHAKE256 增量挤压
@@ -121,7 +121,7 @@ test "test_shake256_incremental_squeeze" {
   shake256_squeeze(full_output[:], 20, state2)
   let incremental_result = bytes_to_hex(part1) + bytes_to_hex(part2)
   let full_result = bytes_to_hex(full_output)
-  inspect!(incremental_result == full_result, content="true")
+  inspect(incremental_result == full_result, content="true")
 }
 
 ///| Test SHAKE256 with longer input crossing rate boundary | 测试跨越比特率边界的长输入
@@ -132,11 +132,11 @@ test "test_shake256_long_input" {
     input[i] = (i % 256).to_byte()
   }
   let output : Array[Byte] = Array::make(32, 0)
-  shake256(output, 32, input, input.length().reinterpret_as_uint())
+  shake256(output=output, 32, input=input, input.length().reinterpret_as_uint())
 
   // Just verify we get some output (specific value depends on implementation)
   let result = bytes_to_hex(output)
-  inspect!(result.length() == 64, content="true") // 32 bytes = 64 hex chars
+  inspect(result.length() == 64, content="true") // 32 bytes = 64 hex chars
 }
 
 ///| Test SHAKE256 with output crossing rate boundary | 测试跨越比特率边界的输出
@@ -145,9 +145,9 @@ test "test_shake256_long_output" {
 
   // Request output longer than SHAKE256_RATE (136 bytes)
   let output : Array[Byte] = Array::make(200, 0)
-  shake256(output, 200, input, input.length().reinterpret_as_uint())
+  shake256(output=output, 200, input=input, input.length().reinterpret_as_uint())
   let result = bytes_to_hex(output)
-  inspect!(result.length() == 400, content="true") // 200 bytes = 400 hex chars
+  inspect(result.length() == 400, content="true") // 200 bytes = 400 hex chars
 }
 
 ///| Test edge case: input length exactly equals rate | 测试边界情况：输入长度恰好等于比特率
@@ -158,7 +158,7 @@ test "test_shake256_rate_boundary" {
     input[i] = i.to_byte()
   }
   let output : Array[Byte] = Array::make(32, 0)
-  shake256(output, 32, input, input.length().reinterpret_as_uint())
+  shake256(output=output, 32, input=input, input.length().reinterpret_as_uint())
   let result = bytes_to_hex(output)
-  inspect!(result.length() == 64, content="true")
+  inspect(result.length() == 64, content="true")
 }

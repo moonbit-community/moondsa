@@ -10,7 +10,7 @@ pub fn power2round(a : Int) -> (Int, Int) {
 /// gamma2 = (Q - 1) / 32 or (Q - 1) / 88
 /// 
 pub fn decompose(a : Int) -> (Int, Int) {
-  let gamma2 = @config.dilithium_context.get_params_set().gamma2
+  let gamma2 =dilithium_context.get_params_set().gamma2
   let mut a1 = (a + 127) >> 7
   let mut a0 = 0
   // Q = 1023 * 2 ^ {13} + 1
@@ -28,7 +28,7 @@ pub fn decompose(a : Int) -> (Int, Int) {
 
 ///|
 pub fn make_hint(a0 : Int, a1 : Int) -> Byte {
-  let gamma2 = @config.dilithium_context.get_params_set().gamma2
+  let gamma2 =dilithium_context.get_params_set().gamma2
   let result = (a0 > gamma2).to_int() |
     (a0 < -gamma2).to_int() |
     ((a0 == -gamma2).to_int() & (a1 != 0).to_int())
@@ -38,7 +38,7 @@ pub fn make_hint(a0 : Int, a1 : Int) -> Byte {
 ///|
 pub fn use_hint(a : Int, hint : Byte) -> Int {
   let (a0, a1) = decompose(a)
-  let gamma2 = @config.dilithium_context.get_params_set().gamma2
+  let gamma2 =dilithium_context.get_params_set().gamma2
 
   // 使用ite避免分支，实现常时间执行
   // Use ite to avoid branching for constant-time execution
@@ -49,7 +49,7 @@ pub fn use_hint(a : Int, hint : Byte) -> Int {
 
   // 对于特殊gamma2值的处理
   // Handling for special gamma2 value
-  let special_result = @utils.ite(
+  let special_result = ite(
     a0 > 0,
     (a1 + 1) & 15, // a0 > 0 的情况
     (a1 - 1) & 15, // a0 <= 0 的情况
@@ -57,17 +57,17 @@ pub fn use_hint(a : Int, hint : Byte) -> Int {
 
   // 对于普通gamma2值的处理
   // Handling for normal gamma2 value
-  let normal_result_positive = @utils.ite(
+  let normal_result_positive = ite(
     a1 == 43,
     0, // a1 == 43 的情况
     a1 + 1, // a1 != 43 的情况
   )
-  let normal_result_negative = @utils.ite(
+  let normal_result_negative = ite(
     a1 == 0,
     43, // a1 == 0 的情况
     a1 - 1, // a1 != 0 的情况
   )
-  let normal_result = @utils.ite(
+  let normal_result = ite(
     a0 > 0,
     normal_result_positive,
     normal_result_negative,
@@ -75,13 +75,13 @@ pub fn use_hint(a : Int, hint : Byte) -> Int {
 
   // 在特殊gamma2和普通gamma2之间选择
   // Choose between special and normal gamma2 handling
-  let computed_result = @utils.ite(
+  let computed_result = ite(
     is_special_gamma2, special_result, normal_result,
   )
 
   // 最终根据hint值决定是否使用计算结果
   // Finally decide whether to use computed result based on hint value
-  let result = @utils.ite(
+  let result = ite(
     hint == 0,
     a1, // hint == 0: 使用原始a1值
     computed_result, // hint != 0: 使用计算后的结果
