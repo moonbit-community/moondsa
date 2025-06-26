@@ -84,7 +84,6 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   let omega = dilithium_context.get_params_set().omega
   // `key` and `mu` are concatenated
   let keymu : Array[Byte] = Array::make(SEEDBYTES + CRHBYTES, 0)
-  let mut nonce : UInt16 = 0
   let mat : Array[Polyvecl] = Array::new()
   let y : Polyvecl = Polyvecl::default()
   let w1 : Polyveck = Polyveck::default()
@@ -120,8 +119,10 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   s1.ntt()
   s2.ntt()
   t0.ntt()
-  let mut sig : Array[Byte] = Array::new()
+
+  let mut nonce : UInt16 = 0
   while true {
+    let mut sig : Array[Byte] = Array::new()
     // Sample intermediate vector y
     y.uniform_gamma1(rhoprime, nonce)
     nonce += 1
@@ -182,9 +183,9 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
     }
     // Write signature
     sig = pack_sig(None, z, h)
-    break
+    return sig
   }
-  sig
+  panic() // unreachable
 }
 
 ///|
