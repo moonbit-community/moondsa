@@ -1,8 +1,7 @@
 ///| a = a0 + a1 * 2 ^ D
 pub fn power2round(a : Int) -> (Int, Int) {
-  let tmp = a + (1 << (D - 1)) - 1
-  let a0 = a - tmp
-  let a1 = tmp << D
+  let a1 = (a + (1 << (D - 1)) - 1) >> D
+  let a0 = a - (a1 << D)
   (a0, a1)
 }
 
@@ -10,7 +9,7 @@ pub fn power2round(a : Int) -> (Int, Int) {
 /// gamma2 = (Q - 1) / 32 or (Q - 1) / 88
 /// 
 pub fn decompose(a : Int) -> (Int, Int) {
-  let gamma2 =dilithium_context.get_params_set().gamma2
+  let gamma2 = dilithium_context.get_params_set().gamma2
   let mut a1 = (a + 127) >> 7
   let mut a0 = 0
   // Q = 1023 * 2 ^ {13} + 1
@@ -28,7 +27,7 @@ pub fn decompose(a : Int) -> (Int, Int) {
 
 ///|
 pub fn make_hint(a0 : Int, a1 : Int) -> Byte {
-  let gamma2 =dilithium_context.get_params_set().gamma2
+  let gamma2 = dilithium_context.get_params_set().gamma2
   let result = (a0 > gamma2).to_int() |
     (a0 < -gamma2).to_int() |
     ((a0 == -gamma2).to_int() & (a1 != 0).to_int())
@@ -38,7 +37,7 @@ pub fn make_hint(a0 : Int, a1 : Int) -> Byte {
 ///|
 pub fn use_hint(a : Int, hint : Byte) -> Int {
   let (a0, a1) = decompose(a)
-  let gamma2 =dilithium_context.get_params_set().gamma2
+  let gamma2 = dilithium_context.get_params_set().gamma2
 
   // 使用ite避免分支，实现常时间执行
   // Use ite to avoid branching for constant-time execution
@@ -75,9 +74,7 @@ pub fn use_hint(a : Int, hint : Byte) -> Int {
 
   // 在特殊gamma2和普通gamma2之间选择
   // Choose between special and normal gamma2 handling
-  let computed_result = ite(
-    is_special_gamma2, special_result, normal_result,
-  )
+  let computed_result = ite(is_special_gamma2, special_result, normal_result)
 
   // 最终根据hint值决定是否使用计算结果
   // Finally decide whether to use computed result based on hint value

@@ -577,9 +577,7 @@ pub fn shake256(
   shake256_squeeze(output[idx.reinterpret_as_int():], outlen, state)
 }
 
-
 ///|这里主要定义了一些外部api,同时为将来支持aes做准备
-
 
 ///|
 pub fn stream128_init(

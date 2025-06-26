@@ -35,7 +35,7 @@ test "test_shake128_empty_16" {
   // NIST test vector for SHAKE128("", 16)
   let expected = "7f9c2ba4e88f827d616045507605853e"
   let actual = bytes_to_hex(output[0:16].to_array())
-  inspect(actual, content=expected)  
+  inspect(actual, content=expected)
 }
 
 ///| Test SHAKE128 with "MoonBit Community" input | 测试字符串输入的 SHAKE128
@@ -69,7 +69,7 @@ test "test_shake256_empty_16" {
 test "test_shake256_moonbit" {
   let input = string_to_bytes("MoonBit Community")
   let output : Array[Byte] = Array::make(64, 0)
-  shake256(output=output, 64, input=input, input.length().reinterpret_as_uint())
+  shake256(output~, 64, input~, input.length().reinterpret_as_uint())
   let expected = "5d8bf49503d49e78" // First 8 bytes
   let actual = bytes_to_hex(output[0:8].to_array())
   inspect(actual, content=expected)
@@ -132,7 +132,7 @@ test "test_shake256_long_input" {
     input[i] = (i % 256).to_byte()
   }
   let output : Array[Byte] = Array::make(32, 0)
-  shake256(output=output, 32, input=input, input.length().reinterpret_as_uint())
+  shake256(output~, 32, input~, input.length().reinterpret_as_uint())
 
   // Just verify we get some output (specific value depends on implementation)
   let result = bytes_to_hex(output)
@@ -145,7 +145,7 @@ test "test_shake256_long_output" {
 
   // Request output longer than SHAKE256_RATE (136 bytes)
   let output : Array[Byte] = Array::make(200, 0)
-  shake256(output=output, 200, input=input, input.length().reinterpret_as_uint())
+  shake256(output~, 200, input~, input.length().reinterpret_as_uint())
   let result = bytes_to_hex(output)
   inspect(result.length() == 400, content="true") // 200 bytes = 400 hex chars
 }
@@ -158,7 +158,7 @@ test "test_shake256_rate_boundary" {
     input[i] = i.to_byte()
   }
   let output : Array[Byte] = Array::make(32, 0)
-  shake256(output=output, 32, input=input, input.length().reinterpret_as_uint())
+  shake256(output~, 32, input~, input.length().reinterpret_as_uint())
   let result = bytes_to_hex(output)
   inspect(result.length() == 64, content="true")
 }

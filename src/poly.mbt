@@ -1,5 +1,3 @@
-
-
 ///| D_SHL = 2^{D-1}, used for power-of-2 rounding / D_SHL = 2^{D-1}，用于2的幂次舍入
 const D_SHL : Int = 1 << (D - 1)
 
@@ -7,7 +5,7 @@ const D_SHL : Int = 1 << (D - 1)
 /// 包含系数数组的多项式结构。
 pub struct Poly {
   coeffs : Array[Int] // Coefficient array / 系数数组
-}
+} derive(Show)
 
 ///| Default implementation for Poly - creates a polynomial with all zero coefficients.
 /// Poly 的默认实现 - 创建所有系数为零的多项式。
@@ -102,7 +100,7 @@ pub fn Poly::inv_ntt_to_mont(self : Poly) -> Unit {
 /// Arguments / 参数: 
 /// - self: result polynomial (modified in place) / 结果多项式（原地修改）
 /// - other: polynomial to multiply with / 要相乘的多项式
-pub fn Poly::pointwise_montgomery(c:  Poly, a: Poly, b: Poly) -> Unit {
+pub fn Poly::pointwise_montgomery(c : Poly, a : Poly, b : Poly) -> Unit {
   for i in 0..<N {
     c.coeffs[i] = montgomery_reduce(
       a.coeffs[i].to_int64() * b.coeffs[i].to_int64(),
@@ -110,14 +108,12 @@ pub fn Poly::pointwise_montgomery(c:  Poly, a: Poly, b: Poly) -> Unit {
   }
 }
 
-
-
-/// For all coefficients c of the input polynomial,
+///| For all coefficients c of the input polynomial,
 /// compute c0, c1 such that c mod Q = c1*2^D + c0
 /// with -2^{D-1} < c0 <= 2^{D-1}. Assumes coefficients to be
 /// standard representatives.
-pub fn Poly::power2round(self : Poly, a0: Poly) -> Unit {
-  for i in 0 ..< N {
+pub fn Poly::power2round(self : Poly, a0 : Poly) -> Unit {
+  for i in 0..<N {
     let (low, high) = power2round(self.coeffs[i])
     self.coeffs[i] = high
     a0.coeffs[i] = low
@@ -257,16 +253,16 @@ pub fn rej_uniform(
 }
 
 ///|
-let poly_uniform_nblocks : UInt = (768 + STREAM128_BLOCKBYTES - 1) /
+pub const POLY_UNIFORM_NBLOCKS : UInt = (768 + STREAM128_BLOCKBYTES - 1) /
   STREAM128_BLOCKBYTES
 
 ///|
 pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
-  let mut buflen = (poly_uniform_nblocks * STREAM128_BLOCKBYTES).reinterpret_as_int()
+  let mut buflen = (POLY_UNIFORM_NBLOCKS * STREAM128_BLOCKBYTES).reinterpret_as_int()
   let buf : Array[Byte] = Array::make(buflen + 2, 0)
   let state = KeccakState::default()
   stream128_init(state, seed, nonce)
-  stream128_squeezeblocks(buf, poly_uniform_nblocks.to_uint64(), state)
+  stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS.to_uint64(), state)
   let mut cnt = rej_uniform(self.coeffs, N, buf, buflen)
   let mut off = 0
   while cnt < N {
@@ -338,11 +334,7 @@ pub fn poly_uniform_eta(
   let buf : Array[Byte] = Array::make(buflen, 0)
   let state = KeccakState::default()
   stream256_init(state, seed, nonce)
-  stream256_squeezeblocks(
-    buf,
-    poly_uniform_eta_nblocks.to_uint64(),
-    state,
-  )
+  stream256_squeezeblocks(buf, poly_uniform_eta_nblocks.to_uint64(), state)
   let mut cnt = rej_eta(self.coeffs, N, buf, buflen)
   while cnt < N {
     stream256_squeezeblocks(buf, 1, state)
@@ -356,14 +348,7 @@ pub fn poly_uniform_eta(
   }
 }
 
-let polyz_packed_bytes : UInt = match dilithium_context.get_params_set().level {
-  SecurityLevel::Dilithium2 => 576
-  _ => 640
-}
-
-let poly_uniform_gamma1_nblocks : UInt = (polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
-
-/// Sample polynomial with uniformly random coefficients
+///| Sample polynomial with uniformly random coefficients
 /// in [-(GAMMA1 - 1), GAMMA1 - 1] by performing rejection
 /// sampling on output stream of SHAKE256(seed|nonce)
 /// or AES256CTR(seed,nonce).
@@ -372,21 +357,19 @@ pub fn Poly::uniform_gamma1(
   seed : Array[Byte],
   nonce : UInt16
 ) -> Unit {
+  let poly_uniform_gamma1_nblocks = dilithium_context.get_params_set().poly_uniform_gamma1_nblocks
   let buflen = (poly_uniform_gamma1_nblocks * STREAM256_BLOCKBYTES).reinterpret_as_int()
   let buf : Array[Byte] = Array::make(buflen, 0)
   let state = KeccakState::default()
   stream256_init(state, seed, nonce)
-  stream256_squeezeblocks(
-    buf,
-    poly_uniform_gamma1_nblocks.to_uint64(),
-    state,
-  )
+  stream256_squeezeblocks(buf, poly_uniform_gamma1_nblocks.to_uint64(), state)
   self.unpack_z(buf)
 }
 
+///|
 fn poly_array_to_bytes(poly_array : Array[Int]) -> Array[Byte] {
-  let bytes_array: Array[Byte] = Array::make(poly_array.length() * 4, 0)
-  for i in 0 ..< poly_array.length() {
+  let bytes_array : Array[Byte] = Array::make(poly_array.length() * 4, 0)
+  for i in 0..<poly_array.length() {
     let n = poly_array[i]
     bytes_array[i * 4] = (n & 0xFF).to_byte()
     bytes_array[i * 4 + 1] = ((n >> 8) & 0xFF).to_byte()
@@ -396,19 +379,18 @@ fn poly_array_to_bytes(poly_array : Array[Int]) -> Array[Byte] {
   bytes_array
 }
 
-/// Implementation of H. Samples polynomial with TAU nonzero
+///| Implementation of H. Samples polynomial with TAU nonzero
 /// coefficients in {-1,1} using the output stream of
 /// SHAKE256(seed).
 pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
   let tau = dilithium_context.get_params_set().tau
   let mut signs : UInt64 = 0
-  let buf: Array[Byte] = Array::make(SHAKE256_RATE.reinterpret_as_int(), 0)
+  let buf : Array[Byte] = Array::make(SHAKE256_RATE.reinterpret_as_int(), 0)
   let state = KeccakState::default()
 
   // The nonce for challenge is not specified, using 0 as a default.
   stream256_init(state, seed, 0)
   stream256_squeezeblocks(buf, 1UL, state)
-
   for i in 0..<8 {
     signs = signs | (buf[i].to_uint64() << (8 * i))
   }
@@ -430,18 +412,18 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
       }
     }
     self.coeffs[i] = self.coeffs[b]
-    self.coeffs[b] = 1 - 2 * ((signs & 1).to_int())
+    self.coeffs[b] = 1 - 2 * (signs & 1).to_int()
     signs = signs >> 1
   }
 }
 
-/// Bit-pack polynomial with coefficients in [-ETA,ETA].
+///| Bit-pack polynomial with coefficients in [-ETA,ETA].
 /// Input coefficients are assumed to lie in [Q-ETA,Q+ETA].
 pub fn Poly::pack_eta(self : Poly) -> Array[Byte] {
   let eta = dilithium_context.get_params_set().eta
   let t = Array::make(8, 0)
   if eta == 2 {
-    let r: Array[Byte] = Array::make(N / 8 * 3, 0)
+    let r : Array[Byte] = Array::make(N / 8 * 3, 0)
     for i in 0..<(N / 8) {
       t[0] = eta - self.coeffs[8 * i + 0]
       t[1] = eta - self.coeffs[8 * i + 1]
@@ -457,7 +439,7 @@ pub fn Poly::pack_eta(self : Poly) -> Array[Byte] {
     }
     r
   } else {
-    let r: Array[Byte] = Array::make(N / 2, 0)
+    let r : Array[Byte] = Array::make(N / 2, 0)
     for i in 0..<(N / 2) {
       t[0] = eta - self.coeffs[2 * i + 0]
       t[1] = eta - self.coeffs[2 * i + 1]
@@ -467,19 +449,25 @@ pub fn Poly::pack_eta(self : Poly) -> Array[Byte] {
   }
 }
 
-/// Unpack polynomial with coefficients in [-ETA,ETA].
+///| Unpack polynomial with coefficients in [-ETA,ETA].
 pub fn Poly::unpack_eta(self : Poly, a : Array[Byte]) -> Unit {
   let eta = dilithium_context.get_params_set().eta
   if eta == 2 {
     for i in 0..<(N / 8) {
-      self.coeffs[8 * i + 0] = (a[3 * i + 0].to_int() & 0x07)
-      self.coeffs[8 * i + 1] = ((a[3 * i + 0].to_int() >> 3) & 0x07)
-      self.coeffs[8 * i + 2] = (((a[3 * i + 0].to_int() >> 6) | (a[3 * i + 1].to_int() << 2)) & 0x07)
-      self.coeffs[8 * i + 3] = ((a[3 * i + 1].to_int() >> 1) & 0x07)
-      self.coeffs[8 * i + 4] = ((a[3 * i + 1].to_int() >> 4) & 0x07)
-      self.coeffs[8 * i + 5] = (((a[3 * i + 1].to_int() >> 7) | (a[3 * i + 2].to_int() << 1)) & 0x07)
-      self.coeffs[8 * i + 6] = ((a[3 * i + 2].to_int() >> 2) & 0x07)
-      self.coeffs[8 * i + 7] = ((a[3 * i + 2].to_int() >> 5) & 0x07)
+      self.coeffs[8 * i + 0] = a[3 * i + 0].to_int() & 0x07
+      self.coeffs[8 * i + 1] = (a[3 * i + 0].to_int() >> 3) & 0x07
+      self.coeffs[8 * i + 2] = (
+          (a[3 * i + 0].to_int() >> 6) | (a[3 * i + 1].to_int() << 2)
+        ) &
+        0x07
+      self.coeffs[8 * i + 3] = (a[3 * i + 1].to_int() >> 1) & 0x07
+      self.coeffs[8 * i + 4] = (a[3 * i + 1].to_int() >> 4) & 0x07
+      self.coeffs[8 * i + 5] = (
+          (a[3 * i + 1].to_int() >> 7) | (a[3 * i + 2].to_int() << 1)
+        ) &
+        0x07
+      self.coeffs[8 * i + 6] = (a[3 * i + 2].to_int() >> 2) & 0x07
+      self.coeffs[8 * i + 7] = (a[3 * i + 2].to_int() >> 5) & 0x07
       self.coeffs[8 * i + 0] = eta - self.coeffs[8 * i + 0]
       self.coeffs[8 * i + 1] = eta - self.coeffs[8 * i + 1]
       self.coeffs[8 * i + 2] = eta - self.coeffs[8 * i + 2]
@@ -491,43 +479,58 @@ pub fn Poly::unpack_eta(self : Poly, a : Array[Byte]) -> Unit {
     }
   } else {
     for i in 0..<(N / 2) {
-      self.coeffs[2 * i + 0] = (a[i].to_int() & 0x0F)
-      self.coeffs[2 * i + 1] = (a[i].to_int() >> 4)
+      self.coeffs[2 * i + 0] = a[i].to_int() & 0x0F
+      self.coeffs[2 * i + 1] = a[i].to_int() >> 4
       self.coeffs[2 * i + 0] = eta - self.coeffs[2 * i + 0]
       self.coeffs[2 * i + 1] = eta - self.coeffs[2 * i + 1]
     }
   }
 }
 
-/// Bit-pack polynomial t1 with coefficients fitting in 10 bits.
+///| Bit-pack polynomial t1 with coefficients fitting in 10 bits.
 /// Input coefficients are assumed to be standard representatives.
 pub fn Poly::pack_t1(self : Poly) -> Array[Byte] {
-  let r: Array[Byte] = Array::make(N / 4 * 5, 0)
+  let r : Array[Byte] = Array::make(N / 4 * 5, 0)
   for i in 0..<(N / 4) {
     r[5 * i + 0] = (self.coeffs[4 * i + 0] >> 0).to_byte()
-    r[5 * i + 1] = ((self.coeffs[4 * i + 0] >> 8) | (self.coeffs[4 * i + 1] << 2)).to_byte()
-    r[5 * i + 2] = ((self.coeffs[4 * i + 1] >> 6) | (self.coeffs[4 * i + 2] << 4)).to_byte()
-    r[5 * i + 3] = ((self.coeffs[4 * i + 2] >> 4) | (self.coeffs[4 * i + 3] << 6)).to_byte()
+    r[5 * i + 1] = ((self.coeffs[4 * i + 0] >> 8) |
+    (self.coeffs[4 * i + 1] << 2)).to_byte()
+    r[5 * i + 2] = ((self.coeffs[4 * i + 1] >> 6) |
+    (self.coeffs[4 * i + 2] << 4)).to_byte()
+    r[5 * i + 3] = ((self.coeffs[4 * i + 2] >> 4) |
+    (self.coeffs[4 * i + 3] << 6)).to_byte()
     r[5 * i + 4] = (self.coeffs[4 * i + 3] >> 2).to_byte()
   }
   r
 }
 
-/// Unpack polynomial t1 with 9-bit coefficients.
+///| Unpack polynomial t1 with 9-bit coefficients.
 /// Output coefficients are standard representatives.
 pub fn Poly::unpack_t1(self : Poly, a : Array[Byte]) -> Unit {
   for i in 0..<(N / 4) {
-    self.coeffs[4 * i + 0] = ((a[5 * i + 0].to_int() >> 0) | (a[5 * i + 1].to_int() << 8)) & 0x3FF
-    self.coeffs[4 * i + 1] = ((a[5 * i + 1].to_int() >> 2) | (a[5 * i + 2].to_int() << 6)) & 0x3FF
-    self.coeffs[4 * i + 2] = ((a[5 * i + 2].to_int() >> 4) | (a[5 * i + 3].to_int() << 4)) & 0x3FF
-    self.coeffs[4 * i + 3] = ((a[5 * i + 3].to_int() >> 6) | (a[5 * i + 4].to_int() << 2)) & 0x3FF
+    self.coeffs[4 * i + 0] = (
+        (a[5 * i + 0].to_int() >> 0) | (a[5 * i + 1].to_int() << 8)
+      ) &
+      0x3FF
+    self.coeffs[4 * i + 1] = (
+        (a[5 * i + 1].to_int() >> 2) | (a[5 * i + 2].to_int() << 6)
+      ) &
+      0x3FF
+    self.coeffs[4 * i + 2] = (
+        (a[5 * i + 2].to_int() >> 4) | (a[5 * i + 3].to_int() << 4)
+      ) &
+      0x3FF
+    self.coeffs[4 * i + 3] = (
+        (a[5 * i + 3].to_int() >> 6) | (a[5 * i + 4].to_int() << 2)
+      ) &
+      0x3FF
   }
 }
 
-/// Bit-pack polynomial t0 with coefficients in [-2^{D-1}, 2^{D-1}].
+///| Bit-pack polynomial t0 with coefficients in [-2^{D-1}, 2^{D-1}].
 pub fn Poly::pack_t0(self : Poly) -> Array[Byte] {
   let t = Array::make(8, 0)
-  let r: Array[Byte] = Array::make(N / 8 * 13, 0)
+  let r : Array[Byte] = Array::make(N / 8 * 13, 0)
   for i in 0..<(N / 8) {
     t[0] = D_SHL - self.coeffs[8 * i + 0]
     t[1] = D_SHL - self.coeffs[8 * i + 1]
@@ -537,7 +540,7 @@ pub fn Poly::pack_t0(self : Poly) -> Array[Byte] {
     t[5] = D_SHL - self.coeffs[8 * i + 5]
     t[6] = D_SHL - self.coeffs[8 * i + 6]
     t[7] = D_SHL - self.coeffs[8 * i + 7]
-    r[13 * i + 0] = (t[0]).to_byte()
+    r[13 * i + 0] = t[0].to_byte()
     r[13 * i + 1] = ((t[0] >> 8) | (t[1] << 5)).to_byte()
     r[13 * i + 2] = (t[1] >> 3).to_byte()
     r[13 * i + 3] = ((t[1] >> 11) | (t[2] << 2)).to_byte()
@@ -554,25 +557,37 @@ pub fn Poly::pack_t0(self : Poly) -> Array[Byte] {
   r
 }
 
-/// Unpack polynomial t0 with coefficients in ]-2^{D-1}, 2^{D-1}].
+///| Unpack polynomial t0 with coefficients in ]-2^{D-1}, 2^{D-1}].
 /// Output coefficients lie in ]Q-2^{D-1},Q+2^{D-1}].
 pub fn Poly::unpack_t0(self : Poly, a : Array[Byte]) -> Unit {
   for i in 0..<(N / 8) {
-    self.coeffs[8 * i + 0] = (a[13 * i + 0].to_int() | (a[13 * i + 1].to_int() << 8))
+    self.coeffs[8 * i + 0] = a[13 * i + 0].to_int() |
+      (a[13 * i + 1].to_int() << 8)
     self.coeffs[8 * i + 0] = self.coeffs[8 * i + 0] & 0x1FFF
-    self.coeffs[8 * i + 1] = (a[13 * i + 1].to_int() >> 5) | (a[13 * i + 2].to_int() << 3) | (a[13 * i + 3].to_int() << 11)
+    self.coeffs[8 * i + 1] = (a[13 * i + 1].to_int() >> 5) |
+      (a[13 * i + 2].to_int() << 3) |
+      (a[13 * i + 3].to_int() << 11)
     self.coeffs[8 * i + 1] = self.coeffs[8 * i + 1] & 0x1FFF
-    self.coeffs[8 * i + 2] = ((a[13 * i + 3].to_int() >> 2) | (a[13 * i + 4].to_int() << 6))
+    self.coeffs[8 * i + 2] = (a[13 * i + 3].to_int() >> 2) |
+      (a[13 * i + 4].to_int() << 6)
     self.coeffs[8 * i + 2] = self.coeffs[8 * i + 2] & 0x1FFF
-    self.coeffs[8 * i + 3] = ((a[13 * i + 4].to_int() >> 7) | (a[13 * i + 5].to_int() << 1) | (a[13 * i + 6].to_int() << 9))
+    self.coeffs[8 * i + 3] = (a[13 * i + 4].to_int() >> 7) |
+      (a[13 * i + 5].to_int() << 1) |
+      (a[13 * i + 6].to_int() << 9)
     self.coeffs[8 * i + 3] = self.coeffs[8 * i + 3] & 0x1FFF
-    self.coeffs[8 * i + 4] = ((a[13 * i + 6].to_int() >> 4) | (a[13 * i + 7].to_int() << 4) | (a[13 * i + 8].to_int() << 12))
+    self.coeffs[8 * i + 4] = (a[13 * i + 6].to_int() >> 4) |
+      (a[13 * i + 7].to_int() << 4) |
+      (a[13 * i + 8].to_int() << 12)
     self.coeffs[8 * i + 4] = self.coeffs[8 * i + 4] & 0x1FFF
-    self.coeffs[8 * i + 5] = ((a[13 * i + 8].to_int() >> 1) | (a[13 * i + 9].to_int() << 7))
+    self.coeffs[8 * i + 5] = (a[13 * i + 8].to_int() >> 1) |
+      (a[13 * i + 9].to_int() << 7)
     self.coeffs[8 * i + 5] = self.coeffs[8 * i + 5] & 0x1FFF
-    self.coeffs[8 * i + 6] = ((a[13 * i + 9].to_int() >> 6) | (a[13 * i + 10].to_int() << 2) | (a[13 * i + 11].to_int() << 10))
+    self.coeffs[8 * i + 6] = (a[13 * i + 9].to_int() >> 6) |
+      (a[13 * i + 10].to_int() << 2) |
+      (a[13 * i + 11].to_int() << 10)
     self.coeffs[8 * i + 6] = self.coeffs[8 * i + 6] & 0x1FFF
-    self.coeffs[8 * i + 7] = ((a[13 * i + 11].to_int() >> 3) | (a[13 * i + 12].to_int() << 5))
+    self.coeffs[8 * i + 7] = (a[13 * i + 11].to_int() >> 3) |
+      (a[13 * i + 12].to_int() << 5)
     self.coeffs[8 * i + 7] = self.coeffs[8 * i + 7] & 0x1FFF
     self.coeffs[8 * i + 0] = D_SHL - self.coeffs[8 * i + 0]
     self.coeffs[8 * i + 1] = D_SHL - self.coeffs[8 * i + 1]
@@ -585,20 +600,20 @@ pub fn Poly::unpack_t0(self : Poly, a : Array[Byte]) -> Unit {
   }
 }
 
-/// Bit-pack polynomial z with coefficients
+///| Bit-pack polynomial z with coefficients
 /// in [-(GAMMA1 - 1), GAMMA1 - 1].
 /// Input coefficients are assumed to be standard representatives.*
 pub fn Poly::pack_z(self : Poly) -> Array[Byte] {
   let gamma1 = dilithium_context.get_params_set().gamma1
   let t = Array::make(4, 0)
-  if gamma1 == (1 << 17) {
-    let r: Array[Byte] = Array::make(N / 4 * 9, 0)
+  if gamma1 == 1 << 17 {
+    let r : Array[Byte] = Array::make(N / 4 * 9, 0)
     for i in 0..<(N / 4) {
       t[0] = gamma1 - self.coeffs[4 * i + 0]
       t[1] = gamma1 - self.coeffs[4 * i + 1]
       t[2] = gamma1 - self.coeffs[4 * i + 2]
       t[3] = gamma1 - self.coeffs[4 * i + 3]
-      r[9 * i + 0] = (t[0]).to_byte()
+      r[9 * i + 0] = t[0].to_byte()
       r[9 * i + 1] = (t[0] >> 8).to_byte()
       r[9 * i + 2] = ((t[0] >> 16) | (t[1] << 2)).to_byte()
       r[9 * i + 3] = (t[1] >> 6).to_byte()
@@ -611,11 +626,11 @@ pub fn Poly::pack_z(self : Poly) -> Array[Byte] {
     r
   } else {
     // gamma1 == (1 << 19)
-    let r: Array[Byte] = Array::make(N / 2 * 5, 0)
+    let r : Array[Byte] = Array::make(N / 2 * 5, 0)
     for i in 0..<(N / 2) {
       t[0] = gamma1 - self.coeffs[2 * i + 0]
       t[1] = gamma1 - self.coeffs[2 * i + 1]
-      r[5 * i + 0] = (t[0]).to_byte()
+      r[5 * i + 0] = t[0].to_byte()
       r[5 * i + 1] = (t[0] >> 8).to_byte()
       r[5 * i + 2] = ((t[0] >> 16) | (t[1] << 4)).to_byte()
       r[5 * i + 3] = (t[1] >> 4).to_byte()
@@ -625,20 +640,28 @@ pub fn Poly::pack_z(self : Poly) -> Array[Byte] {
   }
 }
 
-/// Unpack polynomial z with coefficients
+///| Unpack polynomial z with coefficients
 /// in [-(GAMMA1 - 1), GAMMA1 - 1].
 /// Output coefficients are standard representatives.
 pub fn Poly::unpack_z(self : Poly, a : Array[Byte]) -> Unit {
   let gamma1 = dilithium_context.get_params_set().gamma1
-  if gamma1 == (1 << 17) {
+  if gamma1 == 1 << 17 {
     for i in 0..<(N / 4) {
-      self.coeffs[4 * i + 0] = a[9 * i + 0].to_int() | (a[9 * i + 1].to_int() << 8) | (a[9 * i + 2].to_int() << 16)
+      self.coeffs[4 * i + 0] = a[9 * i + 0].to_int() |
+        (a[9 * i + 1].to_int() << 8) |
+        (a[9 * i + 2].to_int() << 16)
       self.coeffs[4 * i + 0] = self.coeffs[4 * i + 0] & 0x3FFFF
-      self.coeffs[4 * i + 1] = (a[9 * i + 2].to_int() >> 2) | (a[9 * i + 3].to_int() << 6) | (a[9 * i + 4].to_int() << 14)
+      self.coeffs[4 * i + 1] = (a[9 * i + 2].to_int() >> 2) |
+        (a[9 * i + 3].to_int() << 6) |
+        (a[9 * i + 4].to_int() << 14)
       self.coeffs[4 * i + 1] = self.coeffs[4 * i + 1] & 0x3FFFF
-      self.coeffs[4 * i + 2] = (a[9 * i + 4].to_int() >> 4) | (a[9 * i + 5].to_int() << 4) | (a[9 * i + 6].to_int() << 12)
+      self.coeffs[4 * i + 2] = (a[9 * i + 4].to_int() >> 4) |
+        (a[9 * i + 5].to_int() << 4) |
+        (a[9 * i + 6].to_int() << 12)
       self.coeffs[4 * i + 2] = self.coeffs[4 * i + 2] & 0x3FFFF
-      self.coeffs[4 * i + 3] = (a[9 * i + 6].to_int() >> 6) | (a[9 * i + 7].to_int() << 2) | (a[9 * i + 8].to_int() << 10)
+      self.coeffs[4 * i + 3] = (a[9 * i + 6].to_int() >> 6) |
+        (a[9 * i + 7].to_int() << 2) |
+        (a[9 * i + 8].to_int() << 10)
       self.coeffs[4 * i + 3] = self.coeffs[4 * i + 3] & 0x3FFFF
       self.coeffs[4 * i + 0] = gamma1 - self.coeffs[4 * i + 0]
       self.coeffs[4 * i + 1] = gamma1 - self.coeffs[4 * i + 1]
@@ -648,9 +671,13 @@ pub fn Poly::unpack_z(self : Poly, a : Array[Byte]) -> Unit {
   } else {
     // gamma1 == (1 << 19)
     for i in 0..<(N / 2) {
-      self.coeffs[2 * i + 0] = a[5 * i + 0].to_int() | (a[5 * i + 1].to_int() << 8) | (a[5 * i + 2].to_int() << 16)
+      self.coeffs[2 * i + 0] = a[5 * i + 0].to_int() |
+        (a[5 * i + 1].to_int() << 8) |
+        (a[5 * i + 2].to_int() << 16)
       self.coeffs[2 * i + 0] = self.coeffs[2 * i + 0] & 0xFFFFF
-      self.coeffs[2 * i + 1] = (a[5 * i + 2].to_int() >> 4) | (a[5 * i + 3].to_int() << 4) | (a[5 * i + 4].to_int() << 12)
+      self.coeffs[2 * i + 1] = (a[5 * i + 2].to_int() >> 4) |
+        (a[5 * i + 3].to_int() << 4) |
+        (a[5 * i + 4].to_int() << 12)
       self.coeffs[2 * i + 1] = self.coeffs[2 * i + 1] & 0xFFFFF
       self.coeffs[2 * i + 0] = gamma1 - self.coeffs[2 * i + 0]
       self.coeffs[2 * i + 1] = gamma1 - self.coeffs[2 * i + 1]
@@ -658,20 +685,22 @@ pub fn Poly::unpack_z(self : Poly, a : Array[Byte]) -> Unit {
   }
 }
 
-/// Bit-pack polynomial w1 with coefficients in [0, 15].
+///| Bit-pack polynomial w1 with coefficients in [0, 15].
 /// Input coefficients are assumed to be standard representatives.
 pub fn Poly::pack_w1(self : Poly) -> Array[Byte] {
   let gamma2 = dilithium_context.get_params_set().gamma2
   if gamma2 == (Q - 1) / 88 {
-    let r: Array[Byte] = Array::make(N / 4 * 3, 0)
+    let r : Array[Byte] = Array::make(N / 4 * 3, 0)
     for i in 0..<(N / 4) {
       r[3 * i + 0] = (self.coeffs[4 * i + 0] | (self.coeffs[4 * i + 1] << 6)).to_byte()
-      r[3 * i + 1] = ((self.coeffs[4 * i + 1] >> 2) | (self.coeffs[4 * i + 2] << 4)).to_byte()
-      r[3 * i + 2] = ((self.coeffs[4 * i + 2] >> 4) | (self.coeffs[4 * i + 3] << 2)).to_byte()
+      r[3 * i + 1] = ((self.coeffs[4 * i + 1] >> 2) |
+      (self.coeffs[4 * i + 2] << 4)).to_byte()
+      r[3 * i + 2] = ((self.coeffs[4 * i + 2] >> 4) |
+      (self.coeffs[4 * i + 3] << 2)).to_byte()
     }
     r
   } else {
-    let r: Array[Byte] = Array::make(N / 2, 0)
+    let r : Array[Byte] = Array::make(N / 2, 0)
     for i in 0..<(N / 2) {
       r[i] = (self.coeffs[2 * i + 0] | (self.coeffs[2 * i + 1] << 4)).to_byte()
     }

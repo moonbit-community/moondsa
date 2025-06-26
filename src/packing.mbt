@@ -1,53 +1,58 @@
-let seed_bytes: Int = SEEDBYTES
-let k: Int = dilithium_context.get_params_set().k
-let l: Int = dilithium_context.get_params_set().l
-let omega: Int = dilithium_context.get_params_set().omega
-let polyt1_packedbytes: Int = 320
-let polyt0_packedbytes: Int = 416
+///|
+suberror SignError
 
-suberror SignError 
+///|
+let polyz_packedbytes : Int = match dilithium_context.get_params_set().level {
+  SecurityLevel::Dilithium2 => 576
+  _ => 640
+}
 
-let polyz_packedbytes: Int = match dilithium_context.get_params_set().level {
-    SecurityLevel::Dilithium2  => 576
-    _ => 640
-  }
-let polyeta_packedbytes: Int =
-  match dilithium_context.get_params_set().level {
-    SecurityLevel::Dilithium2 | SecurityLevel::Dilithium5 => 128
-    SecurityLevel::Dilithium3 => 96
-  }
+///|
+let polyeta_packedbytes : Int = match dilithium_context.get_params_set().level {
+  SecurityLevel::Dilithium2 | SecurityLevel::Dilithium5 => 128
+  SecurityLevel::Dilithium3 => 96
+}
 
-/// Bit-pack public key pk = (rho, t1).
-pub fn pack_pk(rho: Array[Byte], t1: Polyveck) -> Array[Byte] {
+///| Bit-pack public key pk = (rho, t1).
+pub fn pack_pk(rho : Array[Byte], t1 : Polyveck) -> Array[Byte] {
+  let k = dilithium_context.get_params_set().k
   let pk : Array[Byte] = Array::new()
   pk.append(rho)
+  println("rho: ")
+  print_bytes(rho)
+  println("t1_packed: ")
   for i in 0..<k {
     let t1_packed = t1.vec[i].pack_t1()
+    print_bytes(t1_packed)
     pk.append(t1_packed)
   }
   pk
 }
 
-/// Unpack public key pk = (rho, t1).
-pub fn unpack_pk(pk: Array[Byte]) -> (Array[Byte], Polyveck) {
-  let rho = pk[0:seed_bytes].to_array()
-  let t1: Polyveck = Polyveck::default()
+///| Unpack public key pk = (rho, t1).
+pub fn unpack_pk(pk : Array[Byte]) -> (Array[Byte], Polyveck) {
+  let k = dilithium_context.get_params_set().k
+  let rho = pk[0:SEEDBYTES].to_array()
+  let t1 : Polyveck = Polyveck::default()
   for i in 0..<k {
-    let t1_packed = pk[seed_bytes + i * polyt1_packedbytes:seed_bytes + (i + 1) * polyt1_packedbytes].to_array()
+    let t1_packed = pk[SEEDBYTES + i * POLYT1_PACKEDBYTES:SEEDBYTES +
+    (i + 1) * POLYT1_PACKEDBYTES].to_array()
     t1.vec[i].unpack_t1(t1_packed)
   }
   (rho, t1)
 }
 
-/// Bit-pack secret key sk = (rho, key, tr, s1, s2, t0).
+///| Bit-pack secret key sk = (rho, key, tr, s1, s2, t0).
 pub fn pack_sk(
-  rho: Array[Byte],
-  tr: Array[Byte],
-  key: Array[Byte],
-  t0: Polyveck,
-  s1: Polyvecl,
-  s2: Polyveck,
-) -> Array[Byte]{
+  rho : Array[Byte],
+  tr : Array[Byte],
+  key : Array[Byte],
+  t0 : Polyveck,
+  s1 : Polyvecl,
+  s2 : Polyveck
+) -> Array[Byte] {
+  let k = dilithium_context.get_params_set().k
+  let l = dilithium_context.get_params_set().l
   let sk : Array[Byte] = Array::new()
   sk.append(rho)
   sk.append(key)
@@ -67,52 +72,52 @@ pub fn pack_sk(
   sk
 }
 
-/// Unpack secret key sk = (rho, key, tr, s1, s2, t0).
+///| Unpack secret key sk = (rho, key, tr, s1, s2, t0).
 pub fn unpack_sk(
-  sk: Array[Byte]
+  sk : Array[Byte]
 ) -> (Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyveck) {
+  let k = dilithium_context.get_params_set().k
+  let l = dilithium_context.get_params_set().l
   let mut idx = 0
-
-  let rho = sk[0:seed_bytes].to_array()
-  idx += seed_bytes;
-
-  let key = sk[seed_bytes:seed_bytes + seed_bytes].to_array()
-  idx += seed_bytes;
-
-  let tr = sk[seed_bytes + seed_bytes:seed_bytes + seed_bytes + seed_bytes].to_array()
-  idx += seed_bytes;
-
-  let s1: Polyvecl = Polyvecl::default()
+  let rho = sk[0:SEEDBYTES].to_array()
+  idx += SEEDBYTES
+  let key = sk[SEEDBYTES:SEEDBYTES + SEEDBYTES].to_array()
+  idx += SEEDBYTES
+  let tr = sk[SEEDBYTES + SEEDBYTES:SEEDBYTES + SEEDBYTES + SEEDBYTES].to_array()
+  idx += SEEDBYTES
+  let s1 : Polyvecl = Polyvecl::default()
   for i in 0..<l {
-    let packed_eta = sk[idx + i * polyeta_packedbytes:idx + (i + 1) * polyeta_packedbytes].to_array()
+    let packed_eta = sk[idx + i * polyeta_packedbytes:idx +
+    (i + 1) * polyeta_packedbytes].to_array()
     s1.vec[i].unpack_eta(packed_eta)
   }
-  idx += l * polyeta_packedbytes;
-
-  let s2: Polyveck = Polyveck::default()
+  idx += l * polyeta_packedbytes
+  let s2 : Polyveck = Polyveck::default()
   for i in 0..<k {
-    let packed_eta = sk[idx + i * polyeta_packedbytes:idx + (i + 1) * polyeta_packedbytes].to_array()
+    let packed_eta = sk[idx + i * polyeta_packedbytes:idx +
+    (i + 1) * polyeta_packedbytes].to_array()
     s2.vec[i].unpack_eta(packed_eta)
   }
-  idx += k * polyeta_packedbytes;
-
-  let t0: Polyveck = Polyveck::default()
+  idx += k * polyeta_packedbytes
+  let t0 : Polyveck = Polyveck::default()
   for i in 0..<k {
-    let packed_t0 = sk[idx + i * polyt0_packedbytes:idx + (i + 1) * polyt0_packedbytes].to_array()
+    let packed_t0 = sk[idx + i * POLYT0_PACKEDBYTES:idx +
+    (i + 1) * POLYT0_PACKEDBYTES].to_array()
     t0.vec[i].unpack_t0(packed_t0)
   }
   (rho, key, tr, t0, s1, s2)
 }
 
-/// Bit-pack signature sig = (c, z, h).
-pub fn pack_sig(c: Array[Byte]?, z: Polyvecl, h: Polyveck) -> Array[Byte]{
+///| Bit-pack signature sig = (c, z, h).
+pub fn pack_sig(c : Array[Byte]?, z : Polyvecl, h : Polyveck) -> Array[Byte] {
+  let k = dilithium_context.get_params_set().k
+  let l = dilithium_context.get_params_set().l
+  let omega = dilithium_context.get_params_set().omega
   let sig : Array[Byte] = Array::new()
-
   match c {
     Some(challenge) => sig.append(challenge)
     None => ()
   }
-
   for i in 0..<l {
     let packed_z = z.vec[i].pack_z()
     sig.append(packed_z)
@@ -120,60 +125,61 @@ pub fn pack_sig(c: Array[Byte]?, z: Polyvecl, h: Polyveck) -> Array[Byte]{
 
   // Encode H
   sig.append(Array::make(omega + k, 0))
-
-  let mut cnt = 0;
+  let mut cnt = 0
   for i in 0..<k {
     for j in 0..<N {
       if h.vec[i].coeffs[j] != 0 {
-        sig.push(j.to_byte());
-        cnt += 1;
+        sig.push(j.to_byte())
+        cnt += 1
       }
     }
-    sig.push(cnt.to_byte());
+    sig.push(cnt.to_byte())
   }
-  sig 
+  sig
 }
 
-/// Unpack signature sig = (z, h, c).
+///| Unpack signature sig = (z, h, c).
 pub fn unpack_sig(
-  sig: Array[Byte]
+  sig : Array[Byte]
 ) -> Result[(Polyvecl, Polyveck, Array[Byte]), SignError] {
+  let k = dilithium_context.get_params_set().k
+  let l = dilithium_context.get_params_set().l
+  let omega = dilithium_context.get_params_set().omega
   let z = Polyvecl::default()
   let h = Polyveck::default()
   let c = Array::new()
-  let mut idx = 0;
-
-  c.append(sig[0:seed_bytes].to_array())
-  idx += seed_bytes;
-
+  let mut idx = 0
+  c.append(sig[0:SEEDBYTES].to_array())
+  idx += SEEDBYTES
   for i in 0..<l {
-    let packed_z = sig[idx + i * polyz_packedbytes:idx + (i + 1) * polyz_packedbytes].to_array()
+    let packed_z = sig[idx + i * polyz_packedbytes:idx +
+    (i + 1) * polyz_packedbytes].to_array()
     z.vec[i].unpack_z(packed_z)
   }
-  idx += l * polyz_packedbytes;
+  idx += l * polyz_packedbytes
 
   // Decode h
   let mut cnt = 0
   for i in 0..<k {
-    if sig[idx + omega + i] < cnt.to_byte() || sig[idx + omega + i] > omega.to_byte() {
-      return Err(SignError);
+    if sig[idx + omega + i] < cnt.to_byte() ||
+      sig[idx + omega + i] > omega.to_byte() {
+      return Err(SignError)
     }
     for j in cnt..<sig[idx + omega + i].to_int() {
       // Coefficients are ordered for strong unforgeability
       if j > cnt && sig[idx + j] <= sig[idx + j - 1] {
-        return Err(SignError);
+        return Err(SignError)
       }
-      h.vec[i].coeffs[sig[idx + j].to_int()] = 1;
+      h.vec[i].coeffs[sig[idx + j].to_int()] = 1
     }
-    cnt = sig[idx + omega + i].to_int();
+    cnt = sig[idx + omega + i].to_int()
   }
 
   // Extra indices are zero for strong unforgeability
   for j in cnt..<omega {
     if sig[idx + j] > 0 {
-      return Err(SignError);
+      return Err(SignError)
     }
   }
-
   Ok((z, h, c))
 }
