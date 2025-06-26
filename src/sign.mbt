@@ -22,11 +22,14 @@ pub fn crypto_sign_keypair(
   let rho : Array[Byte] = Array::make(SEEDBYTES, 0)
   let rhoprime : Array[Byte] = Array::make(CRHBYTES, 0)
   let key : Array[Byte] = Array::make(SEEDBYTES, 0)
-  let mat : Array[Polyvecl] = Array::make(k, Polyvecl::default())
+  let mat : Array[Polyvecl] = Array::new()
   let s1 : Polyvecl = Polyvecl::default()
   let s2 : Polyveck = Polyveck::default()
   let t1 : Polyveck = Polyveck::default()
   let t0 : Polyveck = Polyveck::default()
+  for i in 0..<k {
+    mat.push(Polyvecl::default())
+  }
 
   // Get randomness for rho, rhoprime and key
   shake256(
@@ -82,7 +85,7 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   // `key` and `mu` are concatenated
   let keymu : Array[Byte] = Array::make(SEEDBYTES + CRHBYTES, 0)
   let mut nonce : UInt16 = 0
-  let mat : Array[Polyvecl] = Array::make(k, Polyvecl::default())
+  let mat : Array[Polyvecl] = Array::new()
   let y : Polyvecl = Polyvecl::default()
   let w1 : Polyveck = Polyveck::default()
   let w0 : Polyveck = Polyveck::default()
@@ -91,6 +94,9 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   let state = KeccakState::default() //shake256_init()
   let rhoprime : Array[Byte] = Array::make(CRHBYTES, 0)
   let (rho, tr, key, t0, s1, s2) = unpack_sk(sk)
+  for i in 0..<k {
+    mat.push(Polyvecl::default())
+  }
 
   // set keymu from key
   for i in 0..<SEEDBYTES {
@@ -174,7 +180,6 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
     if n > omega {
       continue
     }
-
     // Write signature
     sig = pack_sig(None, z, h)
     break
@@ -198,13 +203,16 @@ pub fn crypto_sign_verify(
   let mut c : Array[Byte] = Array::make(SEEDBYTES, 0)
   let c2 : Array[Byte] = Array::make(SEEDBYTES, 0)
   let cp = Poly::default()
-  let mat : Array[Polyvecl] = Array::make(k, Polyvecl::default())
+  let mat : Array[Polyvecl] = Array::new()
   let mut z = Polyvecl::default()
   let w1 = Polyveck::default()
   let mut h = Polyveck::default()
   let state = KeccakState::default() // shake256_init()
   if sig.length() != sign_bytes {
-    return Err(SignError)
+    return Err(SignError("Wrong signature length"))
+  }
+  for i in 0..<k {
+    mat.push(Polyvecl::default())
   }
   let (rho, t1) = unpack_pk(pk)
   match unpack_sig(sig) {
@@ -216,7 +224,7 @@ pub fn crypto_sign_verify(
     }
   }
   if z.chknorm(gamma1 - beta) > 0 {
-    return Err(SignError)
+    return Err(SignError("Invalid signature"))
   }
 
   // Compute CRH(CRH(rho, t1), msg)
@@ -249,6 +257,7 @@ pub fn crypto_sign_verify(
   w1.caddq()
   w1.use_hint(h)
   let buf = w1.pack_w1()
+  println("w1: \{w1}")
 
   // Call random oracle and verify challenge
   state.init()
@@ -257,8 +266,10 @@ pub fn crypto_sign_verify(
   shake256_finalize(state)
   shake256_squeeze(c2, SEEDBYTES.reinterpret_as_uint(), state)
   // Doesn't require constant time equality check
+  println("c :\n\{c}")
+  println("c2 :\n\{c2}")
   if c != c2 {
-    Err(SignError)
+    Err(SignError("verify failed"))
   } else {
     Ok(())
   }

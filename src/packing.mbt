@@ -1,5 +1,6 @@
 ///|
-suberror SignError
+suberror SignError String
+
 ///| Bit-pack public key pk = (rho, t1).
 pub fn pack_pk(rho : Array[Byte], t1 : Polyveck) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
@@ -97,27 +98,30 @@ pub fn pack_sig(c : Array[Byte]?, z : Polyvecl, h : Polyveck) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
   let omega = dilithium_context.get_params_set().omega
+  let polyz_packed_bytes = dilithium_context.get_params_set().polyz_packed_bytes
   let sig : Array[Byte] = Array::new()
+  let mut idx = 0
   match c {
     Some(challenge) => sig.append(challenge)
-    None => ()
+    None => sig.append(Array::make(SEEDBYTES, 0))
   }
+  idx += SEEDBYTES
   for i in 0..<l {
     let packed_z = z.vec[i].pack_z()
     sig.append(packed_z)
   }
-
+  idx += l * polyz_packed_bytes
   // Encode H
   sig.append(Array::make(omega + k, 0))
   let mut cnt = 0
   for i in 0..<k {
     for j in 0..<N {
       if h.vec[i].coeffs[j] != 0 {
-        sig.push(j.to_byte())
+        sig[idx + cnt] = j.to_byte()
         cnt += 1
       }
     }
-    sig.push(cnt.to_byte())
+    sig[idx + omega + i] = cnt.to_byte()
   }
   sig
 }
@@ -148,12 +152,12 @@ pub fn unpack_sig(
   for i in 0..<k {
     if sig[idx + omega + i] < cnt.to_byte() ||
       sig[idx + omega + i] > omega.to_byte() {
-      return Err(SignError)
+      return Err(SignError("Invalid signature"))
     }
     for j in cnt..<sig[idx + omega + i].to_int() {
       // Coefficients are ordered for strong unforgeability
       if j > cnt && sig[idx + j] <= sig[idx + j - 1] {
-        return Err(SignError)
+        return Err(SignError("Invalid signature"))
       }
       h.vec[i].coeffs[sig[idx + j].to_int()] = 1
     }
@@ -163,7 +167,7 @@ pub fn unpack_sig(
   // Extra indices are zero for strong unforgeability
   for j in cnt..<omega {
     if sig[idx + j] > 0 {
-      return Err(SignError)
+      return Err(SignError("Invalid signature"))
     }
   }
   Ok((z, h, c))

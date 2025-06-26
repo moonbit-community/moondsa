@@ -19,7 +19,7 @@ impl Default for Polyveck with default() -> Polyveck {
   for _i in 0..<k {
     vec.push(Poly::new())
   }
-  { vec: vec }
+  { vec, }
 }
 
 ///|
@@ -34,7 +34,7 @@ impl Default for Polyvecl with default() -> Polyvecl {
   for _i in 0..<l {
     vec.push(Poly::new())
   }
-  { vec: vec }
+  { vec, }
 }
 
 ///| Implementation of ExpandA. Generates matrix A with uniformly

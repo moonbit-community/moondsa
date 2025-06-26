@@ -48,13 +48,13 @@ pub struct ParameterSet {
   gamma1 : Int // (q - 1) / 16
   gamma2 : Int // gamma1 / 2
   omega : Int
-  publickey_bytes : Int
-  polyeta_packedbytes: Int
+  publickey_bytes : Int // seedbytes + k * t1
+  polyeta_packedbytes : Int
   polyw1_packedbytes : Int
   polyz_packed_bytes : Int
-  poly_uniform_gamma1_nblocks : UInt
+  poly_uniform_gamma1_nblocks : UInt //(polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
   polyvech_packed_bytes : Int
-  sign_bytes : Int
+  sign_bytes : Int // seedbytes + l * polyz_packed_bytes + polyvech_packed_bytes
   level : SecurityLevel
   features : Map[String, String] // features(i.e. "aes" not supported now)
 }
@@ -75,14 +75,14 @@ fn SecurityLevel::gen_paramset(
         gamma1: 1 << 17,
         gamma2: (Q - 1) / 88,
         omega: 80,
-        publickey_bytes: SEEDBYTES + 4 * POLYT1_PACKEDBYTES, // seedbytes + k * t1
+        publickey_bytes: SEEDBYTES + 4 * POLYT1_PACKEDBYTES,
         polyeta_packedbytes: 128,
         polyw1_packedbytes: 192,
         polyz_packed_bytes: 576,
         poly_uniform_gamma1_nblocks: (576 + STREAM256_BLOCKBYTES - 1) /
-        STREAM128_BLOCKBYTES, //(polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
+        STREAM256_BLOCKBYTES,
         polyvech_packed_bytes: 80 + 4, // omega + k
-        sign_bytes: SEEDBYTES + 4 * 576 + 84, // seedbytes + l * polyz_packed_bytes + polyvech_packed_bytes
+        sign_bytes: SEEDBYTES + 4 * 576 + 84,
         level: self,
         features,
       }
@@ -101,7 +101,7 @@ fn SecurityLevel::gen_paramset(
         polyw1_packedbytes: 128,
         polyz_packed_bytes: 640,
         poly_uniform_gamma1_nblocks: (640 + STREAM256_BLOCKBYTES - 1) /
-        STREAM128_BLOCKBYTES, //(polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
+        STREAM256_BLOCKBYTES, //(polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
         polyvech_packed_bytes: 55 + 6, // omega + k
         sign_bytes: SEEDBYTES + 5 * 640 + 61, // seedbytes + l * polyz_packed_bytes + polyvech_packed_bytes
         level: self,
@@ -122,7 +122,7 @@ fn SecurityLevel::gen_paramset(
         polyw1_packedbytes: 128,
         polyz_packed_bytes: 640,
         poly_uniform_gamma1_nblocks: (640 + STREAM256_BLOCKBYTES - 1) /
-        STREAM128_BLOCKBYTES, //(polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
+        STREAM256_BLOCKBYTES, //(polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
         polyvech_packed_bytes: 75 + 8, // omega + k
         sign_bytes: SEEDBYTES + 7 * 640 + 83, // seedbytes + l * polyz_packed_bytes + polyvech_packed_bytes
         level: self,
