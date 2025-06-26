@@ -19,6 +19,11 @@ pub fn Poly::new() -> Poly {
   Poly::default()
 }
 
+///|
+pub fn Poly::copy(self : Poly) -> Poly {
+  { coeffs: self.coeffs.copy() }
+}
+
 ///| Add polynomials. No modular reduction is performed.
 /// 多项式加法。不执行模约简。
 /// 

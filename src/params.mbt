@@ -49,6 +49,7 @@ pub struct ParameterSet {
   gamma2 : Int // gamma1 / 2
   omega : Int
   publickey_bytes : Int
+  polyeta_packedbytes: Int
   polyw1_packedbytes : Int
   polyz_packed_bytes : Int
   poly_uniform_gamma1_nblocks : UInt
@@ -75,6 +76,7 @@ fn SecurityLevel::gen_paramset(
         gamma2: (Q - 1) / 88,
         omega: 80,
         publickey_bytes: SEEDBYTES + 4 * POLYT1_PACKEDBYTES, // seedbytes + k * t1
+        polyeta_packedbytes: 128,
         polyw1_packedbytes: 192,
         polyz_packed_bytes: 576,
         poly_uniform_gamma1_nblocks: (576 + STREAM256_BLOCKBYTES - 1) /
@@ -95,6 +97,7 @@ fn SecurityLevel::gen_paramset(
         gamma2: (Q - 1) / 32,
         omega: 55,
         publickey_bytes: SEEDBYTES + 6 * POLYT1_PACKEDBYTES, // seedbytes + k * t1
+        polyeta_packedbytes: 96,
         polyw1_packedbytes: 128,
         polyz_packed_bytes: 640,
         poly_uniform_gamma1_nblocks: (640 + STREAM256_BLOCKBYTES - 1) /
@@ -115,6 +118,7 @@ fn SecurityLevel::gen_paramset(
         gamma2: (Q - 1) / 32,
         omega: 75,
         publickey_bytes: SEEDBYTES + 8 * POLYT1_PACKEDBYTES, // seedbytes + k * t1
+        polyeta_packedbytes: 96,
         polyw1_packedbytes: 128,
         polyz_packed_bytes: 640,
         poly_uniform_gamma1_nblocks: (640 + STREAM256_BLOCKBYTES - 1) /

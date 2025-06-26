@@ -1,29 +1,12 @@
 ///|
 suberror SignError
-
-///|
-let polyz_packedbytes : Int = match dilithium_context.get_params_set().level {
-  SecurityLevel::Dilithium2 => 576
-  _ => 640
-}
-
-///|
-let polyeta_packedbytes : Int = match dilithium_context.get_params_set().level {
-  SecurityLevel::Dilithium2 | SecurityLevel::Dilithium5 => 128
-  SecurityLevel::Dilithium3 => 96
-}
-
 ///| Bit-pack public key pk = (rho, t1).
 pub fn pack_pk(rho : Array[Byte], t1 : Polyveck) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let pk : Array[Byte] = Array::new()
   pk.append(rho)
-  println("rho: ")
-  print_bytes(rho)
-  println("t1_packed: ")
   for i in 0..<k {
     let t1_packed = t1.vec[i].pack_t1()
-    print_bytes(t1_packed)
     pk.append(t1_packed)
   }
   pk
@@ -78,12 +61,13 @@ pub fn unpack_sk(
 ) -> (Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyveck) {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
+  let polyeta_packedbytes = dilithium_context.get_params_set().polyeta_packedbytes
   let mut idx = 0
   let rho = sk[0:SEEDBYTES].to_array()
   idx += SEEDBYTES
-  let key = sk[SEEDBYTES:SEEDBYTES + SEEDBYTES].to_array()
+  let key = sk[idx:idx + SEEDBYTES].to_array()
   idx += SEEDBYTES
-  let tr = sk[SEEDBYTES + SEEDBYTES:SEEDBYTES + SEEDBYTES + SEEDBYTES].to_array()
+  let tr = sk[idx:idx + SEEDBYTES].to_array()
   idx += SEEDBYTES
   let s1 : Polyvecl = Polyvecl::default()
   for i in 0..<l {
@@ -145,6 +129,7 @@ pub fn unpack_sig(
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
   let omega = dilithium_context.get_params_set().omega
+  let polyz_packed_bytes = dilithium_context.get_params_set().polyz_packed_bytes
   let z = Polyvecl::default()
   let h = Polyveck::default()
   let c = Array::new()
@@ -152,11 +137,11 @@ pub fn unpack_sig(
   c.append(sig[0:SEEDBYTES].to_array())
   idx += SEEDBYTES
   for i in 0..<l {
-    let packed_z = sig[idx + i * polyz_packedbytes:idx +
-    (i + 1) * polyz_packedbytes].to_array()
+    let packed_z = sig[idx + i * polyz_packed_bytes:idx +
+    (i + 1) * polyz_packed_bytes].to_array()
     z.vec[i].unpack_z(packed_z)
   }
-  idx += l * polyz_packedbytes
+  idx += l * polyz_packed_bytes
 
   // Decode h
   let mut cnt = 0

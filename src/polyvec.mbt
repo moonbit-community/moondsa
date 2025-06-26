@@ -1,18 +1,25 @@
-///|
+///| Polyveck is a vector of polynomials and length is k.
 pub struct Polyveck {
   vec : Array[Poly]
 } derive(Show)
 
-///|
+///| deep clone
 pub fn Polyveck::copy(self : Polyveck) -> Polyveck {
-  let vec = self.vec.copy()
-  { vec, }
+  let new_vec = Array::new()
+  for poly in self.vec {
+    new_vec.push(poly.copy())
+  }
+  { vec: new_vec }
 }
 
 ///|
 impl Default for Polyveck with default() -> Polyveck {
   let k = dilithium_context.get_params_set().k
-  { vec: Array::make(k, Poly::new()) }
+  let vec = Array::new()
+  for _i in 0..<k {
+    vec.push(Poly::new())
+  }
+  { vec: vec }
 }
 
 ///|
@@ -23,7 +30,11 @@ pub struct Polyvecl {
 ///|
 impl Default for Polyvecl with default() -> Polyvecl {
   let l = dilithium_context.get_params_set().l
-  { vec: Array::make(l, Poly::new()) }
+  let vec = Array::new()
+  for _i in 0..<l {
+    vec.push(Poly::new())
+  }
+  { vec: vec }
 }
 
 ///| Implementation of ExpandA. Generates matrix A with uniformly

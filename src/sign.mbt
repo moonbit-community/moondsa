@@ -45,26 +45,19 @@ pub fn crypto_sign_keypair(
   // Expand matrix
   Polyvecl::matrix_expand(mat, rho)
   // Sample short vectors s1 and s2
-  println("rhoprime: ")
-  print_bytes(rhoprime)
   s1.uniform_eta(rhoprime, 0)
   s2.uniform_eta(rhoprime, l.to_uint16())
-  println("s1: \n\{s1}")
-  println("s2: \n\{s2}")
   // Matrix-vector multiplication
   let s1hat = s1
   s1hat.ntt()
   polyvec_matrix_pointwise_montgomery(t1, mat, s1hat)
-  println("init t1: \n\{t1}")
   t1.reduce()
   t1.invntt_tomont()
-  println("intt t1: \n\{t1}")
   // Add error vector s2
   t1.add(s2)
   // Extract t1 and write public key
   t1.caddq()
   t1.power2round(t0)
-  println("power2round t1: \n\{t1}")
   let pk = pack_pk(rho, t1)
 
   // Compute H(rho, t1) and write secret key
