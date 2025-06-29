@@ -11,7 +11,7 @@ pub fn power2round(a : Int) -> (Int, Int) {
 pub fn decompose(a : Int) -> (Int, Int) {
   let gamma2 = dilithium_context.get_params_set().gamma2
   let mut a1 = (a + 127) >> 7
-  let mut a0 = 0
+  let mut a0 = a
   // Q = 1023 * 2 ^ {13} + 1
   if gamma2 == (Q - 1) / 32 { // gamma2 = 2556413 = 1023 * 2 ^ {8} < 2 ^ {13}
     a1 = (a1 * 1025 + (1 << 21)) >> 22
@@ -21,7 +21,7 @@ pub fn decompose(a : Int) -> (Int, Int) {
     a1 = a1 ^ (((43 - a1) >> 31) & a1)
   }
   a0 = a - a1 * 2 * gamma2
-  a0 = (a0 - (((Q - 1) / 2 - a0) >> 31)) & Q
+  a0 = a0 - ((((Q - 1) / 2 - a0) >> 31) & Q)
   (a0, a1)
 }
 

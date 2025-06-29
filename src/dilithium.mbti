@@ -61,7 +61,7 @@ fn ntt(Array[Int]) -> Unit
 
 fn pack_pk(Array[Byte], Polyveck) -> Array[Byte]
 
-fn pack_sig(Array[Byte]?, Polyvecl, Polyveck) -> Array[Byte]
+fn pack_sig(Array[Byte], Array[Byte]?, Polyvecl, Polyveck) -> Array[Byte]
 
 fn pack_sk(Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyveck) -> Array[Byte]
 
@@ -73,7 +73,7 @@ fn randombytes(@random.Rand, Int) -> Array[Byte]
 
 fn reduce32(Int) -> Int
 
-fn rej_eta(ArrayView[Int], Int, Array[Byte], Int) -> Int
+fn rej_eta(ArrayView[Int], Int, Array[Byte], Int) -> UInt
 
 fn rej_uniform(ArrayView[Int], Int, Array[Byte], Int) -> Int
 
@@ -195,7 +195,7 @@ fn Polyveck::decompose(Self, Self) -> Unit
 fn Polyveck::invntt_tomont(Self) -> Unit
 fn Polyveck::make_hint(Self, Self, Self) -> Int
 fn Polyveck::ntt(Self) -> Unit
-fn Polyveck::pack_w1(Self) -> Array[Byte]
+fn Polyveck::pack_w1(Self, Array[Byte]) -> Unit
 fn Polyveck::pointwise_poly_montgomery(Self, Poly, Self) -> Unit
 fn Polyveck::power2round(Self, Self) -> Unit
 fn Polyveck::reduce(Self) -> Unit
@@ -210,6 +210,7 @@ pub struct Polyvecl {
 }
 fn Polyvecl::add(Self, Self) -> Unit
 fn Polyvecl::chknorm(Self, Int) -> Byte
+fn Polyvecl::copy(Self) -> Self
 fn Polyvecl::invntt_tomont(Self) -> Unit
 fn Polyvecl::matrix_expand(Array[Self], Array[Byte]) -> Unit
 fn Polyvecl::ntt(Self) -> Unit

@@ -20,8 +20,8 @@ pub fn montgomery_reduce(a : Int64) -> Int {
 /// 计算 r \equiv a (mod Q), 满足 -6283009 <= r <= 6283008
 pub fn reduce32(a : Int) -> Int {
   /// Q = 8380417, 2 ^ {22} = 4194304, 2 ^ {23} = 8388608
-  let t = (a + (1 << 22)) >> 23 // 近似 a / Q 
-  let t = a - t * Q
+  let mut t = (a + (1 << 22)) >> 23 // 近似 a / Q 
+  t = a - t * Q
   t
 }
 

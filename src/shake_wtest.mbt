@@ -93,10 +93,10 @@ test "test_shake128_incremental_absorb" {
   shake128_finalize(state2)
 
   // Both should produce same output
-  let output1 : Array[Byte] = Array::make(32, 0)
-  let output2 : Array[Byte] = Array::make(32, 0)
-  shake256_squeeze(output1[:], 32, state1)
-  shake256_squeeze(output2[:], 32, state2)
+  let output1 : Array[Byte] = Array::make(168, 0)
+  let output2 : Array[Byte] = Array::make(168, 0)
+  shake128_squeezeblocks(output1[:], 1, state1)
+  shake128_squeezeblocks(output2[:], 1, state2)
   let result1 = bytes_to_hex(output1)
   let result2 = bytes_to_hex(output2)
   inspect(result1 == result2, content="true")

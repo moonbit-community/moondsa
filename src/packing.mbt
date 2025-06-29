@@ -56,7 +56,7 @@ pub fn pack_sk(
   sk
 }
 
-///| Unpack secret key sk = (rho, key, tr, s1, s2, t0).
+///| Unpack secret key sk = (rho, key, tr, t0, s1, s2).
 pub fn unpack_sk(
   sk : Array[Byte]
 ) -> (Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyveck) {
@@ -94,25 +94,37 @@ pub fn unpack_sk(
 }
 
 ///| Bit-pack signature sig = (c, z, h).
-pub fn pack_sig(c : Array[Byte]?, z : Polyvecl, h : Polyveck) -> Array[Byte] {
+pub fn pack_sig(
+  sig : Array[Byte],
+  c : Array[Byte]?,
+  z : Polyvecl,
+  h : Polyveck
+) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
   let omega = dilithium_context.get_params_set().omega
   let polyz_packed_bytes = dilithium_context.get_params_set().polyz_packed_bytes
-  let sig : Array[Byte] = Array::new()
   let mut idx = 0
   match c {
-    Some(challenge) => sig.append(challenge)
-    None => sig.append(Array::make(SEEDBYTES, 0))
+    Some(challenge) =>
+      for i in 0..<SEEDBYTES {
+        sig[i] = challenge[i]
+      }
+    None => ()
   }
   idx += SEEDBYTES
   for i in 0..<l {
     let packed_z = z.vec[i].pack_z()
-    sig.append(packed_z)
+    for j in idx..<(idx + polyz_packed_bytes) {
+      sig[j] = packed_z[j - idx]
+    }
+    idx += polyz_packed_bytes
   }
-  idx += l * polyz_packed_bytes
+
   // Encode H
-  sig.append(Array::make(omega + k, 0))
+  for i in 0..<(omega + k) {
+    sig[idx + i] = 0
+  }
   let mut cnt = 0
   for i in 0..<k {
     for j in 0..<N {

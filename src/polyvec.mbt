@@ -159,7 +159,8 @@ pub fn Polyvecl::pointwise_acc_montgomery(
 ) -> Unit {
   let l = dilithium_context.get_params_set().l
   let t = Poly::default()
-  for i in 0..<l {
+  w.pointwise_montgomery(u.vec[0], v.vec[0])
+  for i in 1..<l {
     t.pointwise_montgomery(u.vec[i], v.vec[i])
     w.add(t)
   }
@@ -330,11 +331,14 @@ pub fn Polyveck::use_hint(w : Polyveck, h : Polyveck) -> Unit {
 }
 
 ///|
-pub fn Polyveck::pack_w1(self : Polyveck) -> Array[Byte] {
+pub fn Polyveck::pack_w1(self : Polyveck, r : Array[Byte]) -> Unit {
   let k = dilithium_context.get_params_set().k
-  let r : Array[Byte] = Array::new()
+  let mut idx = 0
   for i in 0..<k {
-    r.append(self.vec[i].pack_w1())
+    let packed_w1 = self.vec[i].pack_w1()
+    for j in 0..<packed_w1.length() {
+      r[idx + j] = packed_w1[j]
+    }
+    idx += packed_w1.length()
   }
-  r
 }

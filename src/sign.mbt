@@ -81,6 +81,7 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   let gamma2 = dilithium_context.get_params_set().gamma2
   let beta = dilithium_context.get_params_set().beta
   let omega = dilithium_context.get_params_set().omega
+  let sign_bytes = dilithium_context.get_params_set().sign_bytes
   // `key` and `mu` are concatenated
   let keymu : Array[Byte] = Array::make(SEEDBYTES + CRHBYTES, 0)
   let mat : Array[Polyvecl] = Array::new()
@@ -91,7 +92,7 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   let cp = Poly::default()
   let state = KeccakState::default() //shake256_init()
   let rhoprime : Array[Byte] = Array::make(CRHBYTES, 0)
-  let (rho, tr, key, t0, s1, s2) = unpack_sk(sk)
+  let (rho, key, tr, t0, s1, s2) = unpack_sk(sk)
   for i in 0..<k {
     mat.push(Polyvecl::default())
   }
@@ -112,30 +113,27 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
     input=keymu,
     (SEEDBYTES + CRHBYTES).reinterpret_as_uint(),
   )
-
   // Expand matrix and transform vectors
   Polyvecl::matrix_expand(mat, rho)
   s1.ntt()
   s2.ntt()
   t0.ntt()
   let mut nonce : UInt16 = 0
+  let sig : Array[Byte] = Array::make(sign_bytes, 0)
   while true {
-    let mut sig : Array[Byte] = Array::new()
     // Sample intermediate vector y
     y.uniform_gamma1(rhoprime, nonce)
     nonce += 1
-
     // Matrix-vector multiplication
-    let z = y
+    let z = y.copy()
     z.ntt()
     polyvec_matrix_pointwise_montgomery(w1, mat, z)
     w1.reduce()
     w1.invntt_tomont()
-
     // Decompose w and call the random oracle
     w1.caddq()
     w1.decompose(w0)
-    sig = w1.pack_w1()
+    w1.pack_w1(sig)
     state.init()
     shake256_absorb(
       state,
@@ -180,7 +178,7 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
       continue
     }
     // Write signature
-    sig = pack_sig(None, z, h)
+    let _ = pack_sig(sig, None, z, h)
     return sig
   }
   panic() // unreachable
@@ -198,6 +196,7 @@ pub fn crypto_sign_verify(
   let k = dilithium_context.get_params_set().k
   let polyw1_packedbytes = dilithium_context.get_params_set().polyw1_packedbytes
   let publickey_bytes = dilithium_context.get_params_set().publickey_bytes
+  let buf : Array[Byte] = Array::make(k * polyw1_packedbytes, 0)
   let mu : Array[Byte] = Array::make(CRHBYTES, 0)
   let mut c : Array[Byte] = Array::make(SEEDBYTES, 0)
   let c2 : Array[Byte] = Array::make(SEEDBYTES, 0)
@@ -255,8 +254,7 @@ pub fn crypto_sign_verify(
   // Reconstruct w1
   w1.caddq()
   w1.use_hint(h)
-  let buf = w1.pack_w1()
-  println("w1: \{w1}")
+  w1.pack_w1(buf)
 
   // Call random oracle and verify challenge
   state.init()
@@ -265,8 +263,6 @@ pub fn crypto_sign_verify(
   shake256_finalize(state)
   shake256_squeeze(c2, SEEDBYTES.reinterpret_as_uint(), state)
   // Doesn't require constant time equality check
-  println("c :\n\{c}")
-  println("c2 :\n\{c2}")
   if c != c2 {
     Err(SignError("verify failed"))
   } else {

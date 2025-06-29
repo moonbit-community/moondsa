@@ -138,11 +138,11 @@ pub fn Poly::power2round(self : Poly, a0 : Poly) -> Unit {
 /// Arguments / 参数: 
 /// - self: input polynomial, gets high bits (modified in place) / 输入多项式，获得高位（原地修改）
 /// - other: output polynomial for low bits / 低位的输出多项式
-pub fn Poly::decompose(self : Poly, other : Poly) -> Unit {
+pub fn Poly::decompose(self : Poly, low : Poly) -> Unit {
   for i in 0..<N {
     let (a0, a1) = decompose(self.coeffs[i])
     self.coeffs[i] = a1
-    other.coeffs[i] = a0
+    low.coeffs[i] = a0
   }
 }
 
@@ -206,7 +206,7 @@ pub fn Poly::chknorm(self : Poly, b : Int) -> Byte {
     // Absolute value of centralized representative
     // 中心化代表元的绝对值
     t = coeff >> 31
-    t = coeff - (t & (2 * (coeff - 1)))
+    t = coeff - (t & (2 * coeff))
     if t >= b {
       return 1
     }
@@ -298,7 +298,6 @@ pub fn rej_eta(
     t0 = (buf[pos] & 0x0F).to_uint()
     t1 = (buf[pos] >> 4).to_uint()
     pos = pos + 1
-    
     if eta == 2 {
       if t0 < 15 {
         t0 = t0 - ((205 * t0) >> 10) * 5
@@ -345,11 +344,11 @@ pub fn poly_uniform_eta(
   while cnt < N.reinterpret_as_uint() {
     stream256_squeezeblocks(buf, 1, state)
     cnt += rej_eta(
-        self.coeffs[cnt.reinterpret_as_int():],
-        N - cnt.reinterpret_as_int(),
-        buf,
-        STREAM256_BLOCKBYTES.reinterpret_as_int(),
-      )
+      self.coeffs[cnt.reinterpret_as_int():],
+      N - cnt.reinterpret_as_int(),
+      buf,
+      STREAM256_BLOCKBYTES.reinterpret_as_int(),
+    )
   }
 }
 
@@ -394,8 +393,8 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
   let state = KeccakState::default()
 
   // The nonce for challenge is not specified, using 0 as a default.
-  shake256_absorb(state, seed, SEEDBYTES.reinterpret_as_uint());
-  shake256_finalize(state);
+  shake256_absorb(state, seed, SEEDBYTES.reinterpret_as_uint())
+  shake256_finalize(state)
   shake256_squeezeblocks(buf, 1, state)
   for i in 0..<8 {
     signs = signs | (buf[i].to_uint64() << (8 * i))
@@ -413,7 +412,7 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
       }
       b = buf[pos].to_int()
       pos += 1
-      if b <= i {
+      if b.reinterpret_as_uint() <= i.reinterpret_as_uint() {
         break
       }
     }
@@ -431,7 +430,6 @@ pub fn Poly::pack_eta(self : Poly) -> Array[Byte] {
   let t = Array::make(8, 0)
   let r : Array[Byte] = Array::make(polyeta_packedbytes, 0)
   if eta == 2 {
-    
     for i in 0..<(N / 8) {
       t[0] = eta - self.coeffs[8 * i + 0]
       t[1] = eta - self.coeffs[8 * i + 1]
