@@ -636,7 +636,7 @@ pub fn dilithium_shake256_stream_init(
 ) -> Unit {
   let t = [nonce.to_byte(), (nonce >> 8).to_byte()]
   state.init()
-  shake256_absorb(state, seed, SEEDBYTES.reinterpret_as_uint())
+  shake256_absorb(state, seed, CRHBYTES.reinterpret_as_uint())
   shake256_absorb(state, t, 2)
   shake256_finalize(state)
 }

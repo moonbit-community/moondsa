@@ -1,0 +1,234 @@
+package "ruifeng/dilithium"
+
+import(
+  "moonbitlang/core/random"
+)
+
+// Values
+const CRHBYTES : Int = 64
+
+const D : Int = 13
+
+const N : Int = 256
+
+const POLYT0_PACKEDBYTES : Int = 416
+
+const POLYT1_PACKEDBYTES : Int = 320
+
+const POLY_UNIFORM_NBLOCKS : UInt = 5
+
+const Q : Int = 8380417
+
+const SEEDBYTES : Int = 32
+
+const SHAKE128_RATE : UInt = 168
+
+const SHAKE256_RATE : UInt = 136
+
+const STREAM128_BLOCKBYTES : UInt = 168
+
+const STREAM256_BLOCKBYTES : UInt = 136
+
+fn caddq(Int) -> Int
+
+fn crypto_sign_keypair(Result[Array[Byte], @random.Rand]) -> (Array[Byte], Array[Byte])
+
+fn crypto_sign_signature(Array[Byte], Array[Byte]) -> Array[Byte]
+
+fn crypto_sign_verify(Array[Byte], Array[Byte], Array[Byte]) -> Result[Unit, SignError]
+
+fn decompose(Int) -> (Int, Int)
+
+let dilithium_context : DilithiumContext
+
+fn dilithium_shake128_stream_init(KeccakState, Array[Byte], UInt16) -> Unit
+
+fn dilithium_shake256_stream_init(KeccakState, Array[Byte], UInt16) -> Unit
+
+fn inv_ntt_to_mont(Array[Int]) -> Unit
+
+fn ite(Bool, Int, Int) -> Int
+
+fn keccakf1600_statepermute(FixedArray[UInt64]) -> Unit
+
+fn load64(Array[Byte]) -> UInt64
+
+fn make_hint(Int, Int) -> Byte
+
+fn montgomery_reduce(Int64) -> Int
+
+fn ntt(Array[Int]) -> Unit
+
+fn pack_pk(Array[Byte], Polyveck) -> Array[Byte]
+
+fn pack_sig(Array[Byte]?, Polyvecl, Polyveck) -> Array[Byte]
+
+fn pack_sk(Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyveck) -> Array[Byte]
+
+fn polyvec_matrix_pointwise_montgomery(Polyveck, Array[Polyvecl], Polyvecl) -> Unit
+
+fn power2round(Int) -> (Int, Int)
+
+fn randombytes(@random.Rand, Int) -> Array[Byte]
+
+fn reduce32(Int) -> Int
+
+fn rej_eta(ArrayView[Int], Int, Array[Byte], Int) -> Int
+
+fn rej_uniform(ArrayView[Int], Int, Array[Byte], Int) -> Int
+
+fn shake128_absorb(KeccakState, Array[Byte], UInt) -> Unit
+
+fn shake128_finalize(KeccakState) -> Unit
+
+fn shake128_squeezeblocks(ArrayView[Byte], UInt, KeccakState) -> Unit
+
+fn shake256(output~ : Array[Byte], UInt, input~ : Array[Byte], UInt) -> Unit
+
+fn shake256_absorb(KeccakState, Array[Byte], UInt) -> Unit
+
+fn shake256_absorb_once(KeccakState, Array[Byte], UInt) -> Unit
+
+fn shake256_finalize(KeccakState) -> Unit
+
+fn shake256_squeeze(ArrayView[Byte], UInt, KeccakState) -> Unit
+
+fn shake256_squeezeblocks(Array[Byte], UInt, KeccakState) -> Unit
+
+fn store64(Array[Byte], UInt64) -> Unit
+
+fn stream128_init(KeccakState, Array[Byte], UInt16) -> Unit
+
+fn stream128_squeezeblocks(ArrayView[Byte], UInt64, KeccakState) -> Unit
+
+fn stream256_init(KeccakState, Array[Byte], UInt16) -> Unit
+
+fn stream256_squeezeblocks(Array[Byte], UInt64, KeccakState) -> Unit
+
+fn unpack_pk(Array[Byte]) -> (Array[Byte], Polyveck)
+
+fn unpack_sig(Array[Byte]) -> Result[(Polyvecl, Polyveck, Array[Byte]), SignError]
+
+fn unpack_sk(Array[Byte]) -> (Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyveck)
+
+fn use_hint(Int, Byte) -> Int
+
+// Types and methods
+type BigRandom
+fn BigRandom::get_random(Array[Byte], Int) -> @random.Rand
+
+type DilithiumContext
+fn DilithiumContext::get_params_set(Self) -> ParameterSet
+fn DilithiumContext::get_random(Self) -> @random.Rand
+fn DilithiumContext::set_level(Self, SecurityLevel) -> Unit
+fn DilithiumContext::set_random(Self, @random.Rand) -> Unit
+
+pub struct KeccakState {
+  s : FixedArray[UInt64]
+  mut pos : UInt
+}
+fn KeccakState::init(Self) -> Unit
+impl Default for KeccakState
+impl Show for KeccakState
+
+pub struct ParameterSet {
+  k : Int
+  l : Int
+  eta : Int
+  tau : Int
+  beta : Int
+  gamma1 : Int
+  gamma2 : Int
+  omega : Int
+  publickey_bytes : Int
+  polyeta_packedbytes : Int
+  polyw1_packedbytes : Int
+  polyz_packed_bytes : Int
+  poly_uniform_gamma1_nblocks : UInt
+  polyvech_packed_bytes : Int
+  sign_bytes : Int
+  level : SecurityLevel
+  features : Map[String, String]
+}
+
+pub struct Poly {
+  coeffs : Array[Int]
+}
+fn Poly::add(Self, Self) -> Unit
+fn Poly::caddq(Self) -> Unit
+fn Poly::challenge(Self, Array[Byte]) -> Unit
+fn Poly::chknorm(Self, Int) -> Byte
+fn Poly::copy(Self) -> Self
+fn Poly::decompose(Self, Self) -> Unit
+fn Poly::inv_ntt_to_mont(Self) -> Unit
+fn Poly::make_hint(Self, Self, Self) -> Int
+fn Poly::new() -> Self
+fn Poly::ntt(Self) -> Unit
+fn Poly::pack_eta(Self) -> Array[Byte]
+fn Poly::pack_t0(Self) -> Array[Byte]
+fn Poly::pack_t1(Self) -> Array[Byte]
+fn Poly::pack_w1(Self) -> Array[Byte]
+fn Poly::pack_z(Self) -> Array[Byte]
+fn Poly::pointwise_montgomery(Self, Self, Self) -> Unit
+fn Poly::poly_uniform_eta(Self, Array[Byte], UInt16) -> Unit
+fn Poly::power2round(Self, Self) -> Unit
+fn Poly::reduce(Self) -> Unit
+fn Poly::shiftl(Self) -> Unit
+fn Poly::sub(Self, Self) -> Unit
+fn Poly::uniform(Self, Array[Byte], UInt16) -> Unit
+fn Poly::uniform_gamma1(Self, Array[Byte], UInt16) -> Unit
+fn Poly::unpack_eta(Self, Array[Byte]) -> Unit
+fn Poly::unpack_t0(Self, Array[Byte]) -> Unit
+fn Poly::unpack_t1(Self, Array[Byte]) -> Unit
+fn Poly::unpack_z(Self, Array[Byte]) -> Unit
+fn Poly::use_hint(Self, Self) -> Unit
+impl Show for Poly
+
+pub struct Polyveck {
+  vec : Array[Poly]
+}
+fn Polyveck::add(Self, Self) -> Unit
+fn Polyveck::caddq(Self) -> Unit
+fn Polyveck::chknorm(Self, Int) -> Byte
+fn Polyveck::copy(Self) -> Self
+fn Polyveck::decompose(Self, Self) -> Unit
+fn Polyveck::invntt_tomont(Self) -> Unit
+fn Polyveck::make_hint(Self, Self, Self) -> Int
+fn Polyveck::ntt(Self) -> Unit
+fn Polyveck::pack_w1(Self) -> Array[Byte]
+fn Polyveck::pointwise_poly_montgomery(Self, Poly, Self) -> Unit
+fn Polyveck::power2round(Self, Self) -> Unit
+fn Polyveck::reduce(Self) -> Unit
+fn Polyveck::shiftl(Self) -> Unit
+fn Polyveck::sub(Self, Self) -> Unit
+fn Polyveck::uniform_eta(Self, Array[Byte], UInt16) -> Unit
+fn Polyveck::use_hint(Self, Self) -> Unit
+impl Show for Polyveck
+
+pub struct Polyvecl {
+  vec : Array[Poly]
+}
+fn Polyvecl::add(Self, Self) -> Unit
+fn Polyvecl::chknorm(Self, Int) -> Byte
+fn Polyvecl::invntt_tomont(Self) -> Unit
+fn Polyvecl::matrix_expand(Array[Self], Array[Byte]) -> Unit
+fn Polyvecl::ntt(Self) -> Unit
+fn Polyvecl::pointwise_acc_montgomery(Poly, Self, Self) -> Unit
+fn Polyvecl::pointwise_poly_montgomery(Self, Poly, Self) -> Unit
+fn Polyvecl::reduce(Self) -> Unit
+fn Polyvecl::uniform_eta(Self, Array[Byte], UInt16) -> Unit
+fn Polyvecl::uniform_gamma1(Self, Array[Byte], UInt16) -> Unit
+impl Show for Polyvecl
+
+pub(all) enum SecurityLevel {
+  Dilithium2
+  Dilithium3
+  Dilithium5
+}
+
+type SignError
+
+// Type aliases
+
+// Traits
+

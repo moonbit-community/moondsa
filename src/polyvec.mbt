@@ -27,6 +27,15 @@ pub struct Polyvecl {
   vec : Array[Poly]
 } derive(Show)
 
+///| deep clone
+pub fn Polyvecl::copy(self : Polyvecl) -> Polyvecl {
+  let new_vec = Array::new()
+  for poly in self.vec {
+    new_vec.push(poly.copy())
+  }
+  { vec: new_vec }
+}
+
 ///|
 impl Default for Polyvecl with default() -> Polyvecl {
   let l = dilithium_context.get_params_set().l
@@ -150,7 +159,6 @@ pub fn Polyvecl::pointwise_acc_montgomery(
 ) -> Unit {
   let l = dilithium_context.get_params_set().l
   let t = Poly::default()
-  w.pointwise_montgomery(u.vec[0], v.vec[0])
   for i in 0..<l {
     t.pointwise_montgomery(u.vec[i], v.vec[i])
     w.add(t)

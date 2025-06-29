@@ -44,14 +44,13 @@ pub fn crypto_sign_keypair(
   rhoprime.append(seedbuf[SEEDBYTES:SEEDBYTES + CRHBYTES].to_array())
   key.clear()
   key.append(seedbuf[SEEDBYTES + CRHBYTES:].to_array())
-
   // Expand matrix
   Polyvecl::matrix_expand(mat, rho)
   // Sample short vectors s1 and s2
   s1.uniform_eta(rhoprime, 0)
   s2.uniform_eta(rhoprime, l.to_uint16())
   // Matrix-vector multiplication
-  let s1hat = s1
+  let s1hat = s1.copy()
   s1hat.ntt()
   polyvec_matrix_pointwise_montgomery(t1, mat, s1hat)
   t1.reduce()
@@ -119,7 +118,6 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   s1.ntt()
   s2.ntt()
   t0.ntt()
-
   let mut nonce : UInt16 = 0
   while true {
     let mut sig : Array[Byte] = Array::new()

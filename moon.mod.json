@@ -1,9 +1,7 @@
 {
   "name": "ruifeng/dilithium",
   "version": "0.1.0",
-  "deps": {
-    "Luna-Flow/luna-poly": "0.1.0"
-  },
+  "deps": {},
   "readme": "README.md",
   "repository": "",
   "license": "Apache-2.0",

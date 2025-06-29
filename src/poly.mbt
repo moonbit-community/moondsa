@@ -246,6 +246,7 @@ pub fn rej_uniform(
     pos = pos + 1
     t = t | (buf[pos].to_uint() << 16)
     pos = pos + 1
+    t = t & 0x7FFFFF
 
     // Accept sample if it's in the valid range [0, Q-1]
     // 如果样本在有效范围 [0, Q-1] 内则接受
@@ -270,7 +271,7 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
   stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS.to_uint64(), state)
   let mut cnt = rej_uniform(self.coeffs, N, buf, buflen)
   let mut off = 0
-  while cnt < N {
+  while cnt.reinterpret_as_uint() < N.reinterpret_as_uint() {
     off = buflen % 3
     for i in 0..<off {
       buf[i] = buf[buflen - off + i]
@@ -287,7 +288,7 @@ pub fn rej_eta(
   len : Int,
   buf : Array[Byte],
   buflen : Int
-) -> Int {
+) -> UInt {
   let mut cnt = 0
   let mut pos = 0
   let mut t0 = 0U
@@ -297,10 +298,12 @@ pub fn rej_eta(
     t0 = (buf[pos] & 0x0F).to_uint()
     t1 = (buf[pos] >> 4).to_uint()
     pos = pos + 1
+    
     if eta == 2 {
       if t0 < 15 {
         t0 = t0 - ((205 * t0) >> 10) * 5
         a[cnt] = 2 - t0.reinterpret_as_int()
+        cnt += 1
       }
       if t1 < 15 && cnt < len {
         t1 = t1 - ((205 * t1) >> 10) * 5
@@ -318,15 +321,7 @@ pub fn rej_eta(
       }
     }
   }
-  cnt
-}
-
-///|
-let poly_uniform_eta_nblocks : UInt = if dilithium_context.get_params_set().eta ==
-  2 {
-  (136 + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
-} else {
-  (227 + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
+  cnt.reinterpret_as_uint()
 }
 
 ///|
@@ -335,18 +330,23 @@ pub fn poly_uniform_eta(
   seed : Array[Byte],
   nonce : UInt16
 ) -> Unit {
+  let poly_uniform_eta_nblocks : UInt = if dilithium_context.get_params_set().eta ==
+    2 {
+    (136 + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
+  } else {
+    (227 + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
+  }
   let buflen = (poly_uniform_eta_nblocks * STREAM256_BLOCKBYTES).reinterpret_as_int()
   let buf : Array[Byte] = Array::make(buflen, 0)
   let state = KeccakState::default()
   stream256_init(state, seed, nonce)
   stream256_squeezeblocks(buf, poly_uniform_eta_nblocks.to_uint64(), state)
   let mut cnt = rej_eta(self.coeffs, N, buf, buflen)
-  while cnt < N {
+  while cnt < N.reinterpret_as_uint() {
     stream256_squeezeblocks(buf, 1, state)
-    cnt = cnt +
-      rej_eta(
-        self.coeffs[cnt:],
-        N - cnt,
+    cnt += rej_eta(
+        self.coeffs[cnt.reinterpret_as_int():],
+        N - cnt.reinterpret_as_int(),
         buf,
         STREAM256_BLOCKBYTES.reinterpret_as_int(),
       )
@@ -394,8 +394,9 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
   let state = KeccakState::default()
 
   // The nonce for challenge is not specified, using 0 as a default.
-  stream256_init(state, seed, 0)
-  stream256_squeezeblocks(buf, 1UL, state)
+  shake256_absorb(state, seed, SEEDBYTES.reinterpret_as_uint());
+  shake256_finalize(state);
+  shake256_squeezeblocks(buf, 1, state)
   for i in 0..<8 {
     signs = signs | (buf[i].to_uint64() << (8 * i))
   }
@@ -426,9 +427,11 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
 /// Input coefficients are assumed to lie in [Q-ETA,Q+ETA].
 pub fn Poly::pack_eta(self : Poly) -> Array[Byte] {
   let eta = dilithium_context.get_params_set().eta
+  let polyeta_packedbytes = dilithium_context.get_params_set().polyeta_packedbytes
   let t = Array::make(8, 0)
+  let r : Array[Byte] = Array::make(polyeta_packedbytes, 0)
   if eta == 2 {
-    let r : Array[Byte] = Array::make(N / 8 * 3, 0)
+    
     for i in 0..<(N / 8) {
       t[0] = eta - self.coeffs[8 * i + 0]
       t[1] = eta - self.coeffs[8 * i + 1]
@@ -442,16 +445,14 @@ pub fn Poly::pack_eta(self : Poly) -> Array[Byte] {
       r[3 * i + 1] = ((t[2] >> 2) | (t[3] << 1) | (t[4] << 4) | (t[5] << 7)).to_byte()
       r[3 * i + 2] = ((t[5] >> 1) | (t[6] << 2) | (t[7] << 5)).to_byte()
     }
-    r
   } else {
-    let r : Array[Byte] = Array::make(N / 2, 0)
     for i in 0..<(N / 2) {
       t[0] = eta - self.coeffs[2 * i + 0]
       t[1] = eta - self.coeffs[2 * i + 1]
       r[i] = (t[0] | (t[1] << 4)).to_byte()
     }
-    r
   }
+  r
 }
 
 ///| Unpack polynomial with coefficients in [-ETA,ETA].
