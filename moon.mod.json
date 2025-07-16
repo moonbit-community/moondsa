@@ -1,11 +1,18 @@
 {
   "name": "ruifeng/moondsa",
-  "version": "0.1.0",
-  "deps": {},
+  "version": "0.1.1",
+  "deps": {
+    "moonbitlang/x": "0.4.30"
+  },
   "readme": "README.md",
   "repository": "",
   "license": "Apache-2.0",
-  "keywords": ["Dilithium", "Signature", "Cryptography", "Post-Quantum"],
+  "keywords": [
+    "Dilithium",
+    "Signature",
+    "Cryptography",
+    "Post-Quantum"
+  ],
   "description": "moondsa is a MoonBit implementation of Dilithium, a post-quantum signature scheme.",
   "source": "src"
 }

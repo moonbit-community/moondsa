@@ -5,9 +5,9 @@
 
 ## RoadMap
 
-- [x] 基本功能:keygen, sign， verify
+- [x] 基本功能:keygen, sign, verify
 - [x] 多种安全级别, Dilithium-2, Dilithium-3, Dilithium-5
-- [ ] 使用kat进行全面测试
+- [x] 使用kat进行全面测试
 - [ ] AES签名算法
 - [ ] 实现非确定性算法（需要random）
 
@@ -15,4 +15,12 @@
 
 本项目没有经过安全性分析。请谨慎使用。
 
+## Examples
 
+```
+// 首先需要设置优先级别
+@dilithium.dilithium_context.set_level(SecurityLevel::Dilithium5)
+let (pk, sk) = keypair_gen(Ok(seed)) // 这里需要传入seed或者Rand作为随机
+let sign = sign(msg, sk) 
+let result : Result[Unit, SignError] = verify(sig, msg, pk)
+```

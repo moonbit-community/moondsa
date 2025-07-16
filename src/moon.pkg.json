@@ -1,4 +1,6 @@
 {
   "import": [
-  ]
+    "moonbitlang/x/fs"
+  ],
+  "warn-list": "-1-2-7"
 }

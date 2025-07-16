@@ -3,13 +3,11 @@ typealias @random.Rand
 
 ///|
 struct BigRandom {
-  sources : Array[&@moonbitlang/core/random.Source]
+  sources : Array[Rand]
 }
 
 ///|
-fn BigRandom::new(
-  sources : Array[&@moonbitlang/core/random.Source]
-) -> BigRandom {
+fn BigRandom::new(sources : Array[Rand]) -> BigRandom {
   { sources, }
 }
 
@@ -18,7 +16,7 @@ impl @random.Source for BigRandom with next(self) -> UInt64 {
   // iteratively get the next random number from the sources
   let mut res = 0UL
   for source in self.sources {
-    res = res ^ source.next()
+    res = res ^ source.uint64()
   }
   res
 }
@@ -37,11 +35,11 @@ pub fn BigRandom::get_random(seed : Array[Byte], level : Int) -> Rand {
       input=seed,
       seed.length().reinterpret_as_uint(),
     )
-    let sources : Array[&@moonbitlang/core/random.Source] = []
+    let sources = []
     for i in 0..<(checksum.length() / 32) {
       let bytes = Bytes::from_array(checksum[i * 32:(i + 1) * 32].to_array())
-      let randomSource = @random.chacha8(seed=bytes)
-      sources.push(randomSource)
+      let random = Rand::chacha8(seed=bytes)
+      sources.push(random)
     }
     let sourcePool = BigRandom::new(sources)
     let gen = @random.Rand::new(generator=sourcePool)
@@ -72,5 +70,5 @@ test "BigRandom" {
   for i in 0..<100 {
     str += rand.int().to_string()
   }
-  println(str)
+  println("BigRandom Test: \{str}")
 }

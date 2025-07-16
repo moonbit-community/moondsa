@@ -1,5 +1,5 @@
 ///| return (public key, secret key)
-pub fn crypto_sign_keypair(
+pub fn keypair_gen(
   seed : Result[Array[Byte], Rand]
 ) -> (Array[Byte], Array[Byte]) {
   let init_seed : Array[Byte] = Array::make(SEEDBYTES, 0)
@@ -74,7 +74,7 @@ pub fn crypto_sign_keypair(
 }
 
 ///| (m, sk) -> sig
-pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
+pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let polyw1_packedbytes = dilithium_context.get_params_set().polyw1_packedbytes
   let gamma1 = dilithium_context.get_params_set().gamma1
@@ -185,7 +185,7 @@ pub fn crypto_sign_signature(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
 }
 
 ///|
-pub fn crypto_sign_verify(
+pub fn verify(
   sig : Array[Byte],
   m : Array[Byte],
   pk : Array[Byte]
