@@ -151,7 +151,7 @@ pub fn Polyvecl::pointwise_poly_montgomery(
 /// resulting vector by 2^{-32} and add (accumulate) polynomials
 /// in it. Input/output vectors are in NTT domain representation.
 /// Input coefficients are assumed to be less than 22*Q. Output
-/// coeffcient are less than 2*L*Q.
+/// coefficient are less than 2*L*Q.
 pub fn Polyvecl::pointwise_acc_montgomery(
   w : Poly,
   u : Polyvecl,
