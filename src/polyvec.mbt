@@ -51,7 +51,7 @@ impl Default for Polyvecl with default() -> Polyvecl {
 /// sampling on the output stream of SHAKE128(rho|j|i)
 pub fn Polyvecl::matrix_expand(
   mat : Array[Polyvecl],
-  rho : Array[Byte]
+  rho : Array[Byte],
 ) -> Unit {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
@@ -66,7 +66,7 @@ pub fn Polyvecl::matrix_expand(
 pub fn polyvec_matrix_pointwise_montgomery(
   t : Polyveck,
   mat : Array[Polyvecl],
-  v : Polyvecl
+  v : Polyvecl,
 ) -> Unit {
   let k = dilithium_context.get_params_set().k
   for i in 0..<k {
@@ -78,7 +78,7 @@ pub fn polyvec_matrix_pointwise_montgomery(
 pub fn Polyvecl::uniform_eta(
   v : Polyvecl,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   let l = dilithium_context.get_params_set().l
   let mut nonce = nonce
@@ -92,7 +92,7 @@ pub fn Polyvecl::uniform_eta(
 pub fn Polyvecl::uniform_gamma1(
   v : Polyvecl,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   let l = dilithium_context.get_params_set().l
   let l_u16 = l.to_uint16()
@@ -139,7 +139,7 @@ pub fn Polyvecl::invntt_tomont(v : Polyvecl) -> Unit {
 pub fn Polyvecl::pointwise_poly_montgomery(
   r : Polyvecl,
   a : Poly,
-  v : Polyvecl
+  v : Polyvecl,
 ) -> Unit {
   let l = dilithium_context.get_params_set().l
   for i in 0..<l {
@@ -155,7 +155,7 @@ pub fn Polyvecl::pointwise_poly_montgomery(
 pub fn Polyvecl::pointwise_acc_montgomery(
   w : Poly,
   u : Polyvecl,
-  v : Polyvecl
+  v : Polyvecl,
 ) -> Unit {
   let l = dilithium_context.get_params_set().l
   let t = Poly::default()
@@ -186,7 +186,7 @@ pub fn Polyvecl::chknorm(v : Polyvecl, bound : Int) -> Byte {
 pub fn Polyveck::uniform_eta(
   v : Polyveck,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   let k = dilithium_context.get_params_set().k
   let mut nonce = nonce
@@ -265,7 +265,7 @@ pub fn Polyveck::invntt_tomont(v : Polyveck) -> Unit {
 pub fn Polyveck::pointwise_poly_montgomery(
   r : Polyveck,
   a : Poly,
-  v : Polyveck
+  v : Polyveck,
 ) -> Unit {
   let k = dilithium_context.get_params_set().k
   for i in 0..<k {

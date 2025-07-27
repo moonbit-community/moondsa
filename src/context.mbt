@@ -7,7 +7,7 @@ struct DilithiumContext {
 ///| 
 fn DilithiumContext::new(
   level : SecurityLevel,
-  random : @random.Rand
+  random : @random.Rand,
 ) -> DilithiumContext {
   let params_set = level.gen_paramset()
   { params_set, random }
@@ -22,14 +22,14 @@ pub let dilithium_context : DilithiumContext = DilithiumContext::new(
 ///|
 pub fn DilithiumContext::set_level(
   self : DilithiumContext,
-  level : SecurityLevel
+  level : SecurityLevel,
 ) -> Unit {
   self.params_set = level.gen_paramset()
 }
 
 ///|
 pub fn DilithiumContext::get_params_set(
-  self : DilithiumContext
+  self : DilithiumContext,
 ) -> ParameterSet {
   self.params_set
 }
@@ -37,7 +37,7 @@ pub fn DilithiumContext::get_params_set(
 ///|
 pub fn DilithiumContext::set_random(
   self : DilithiumContext,
-  random : @random.Rand
+  random : @random.Rand,
 ) -> Unit {
   self.random = random
 }

@@ -340,7 +340,7 @@ fn keccak_absorb(
   state : KeccakState,
   r : UInt,
   input : Array[Byte],
-  inlen : UInt
+  inlen : UInt,
 ) -> Unit {
   let mut idx = 0
   let mut pos = state.pos
@@ -374,7 +374,7 @@ fn keccak_finalize(
   s : FixedArray[UInt64],
   pos : UInt,
   r : UInt,
-  p : Byte
+  p : Byte,
 ) -> Unit {
   let index = (pos >> 3).reinterpret_as_int()
   let offset = (pos & 7).reinterpret_as_int()
@@ -391,7 +391,7 @@ fn keccak_squeeze(
   outlen : UInt,
   s : FixedArray[UInt64],
   pos : UInt,
-  r : UInt
+  r : UInt,
 ) -> UInt {
   let mut pos = pos
   let mut outlen = outlen
@@ -424,7 +424,7 @@ fn keccak_absorb_once(
   r : UInt,
   input : Array[Byte],
   inlen : UInt,
-  p : Byte
+  p : Byte,
 ) -> Unit {
   let mut inlen = inlen.reinterpret_as_int()
   let r = r.reinterpret_as_int()
@@ -455,7 +455,7 @@ fn keccak_squeezeblocks(
   out : ArrayView[Byte],
   nblocks : UInt,
   s : FixedArray[UInt64],
-  r : UInt
+  r : UInt,
 ) -> Unit {
   let mut nblocks = nblocks
   let r = r.reinterpret_as_int()
@@ -481,7 +481,7 @@ fn keccak_squeezeblocks(
 pub fn shake128_absorb(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt
+  inlen : UInt,
 ) -> Unit {
   keccak_absorb(state, SHAKE128_RATE, input, inlen)
 }
@@ -500,7 +500,7 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 pub fn shake128_squeezeblocks(
   output : ArrayView[Byte],
   nblocks : UInt,
-  s : KeccakState
+  s : KeccakState,
 ) -> Unit {
   keccak_squeezeblocks(output, nblocks, s.s, SHAKE128_RATE)
 }
@@ -511,7 +511,7 @@ pub fn shake128_squeezeblocks(
 pub fn shake256_absorb(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt
+  inlen : UInt,
 ) -> Unit {
   keccak_absorb(state, SHAKE256_RATE, input, inlen)
 }
@@ -530,7 +530,7 @@ pub fn shake256_finalize(state : KeccakState) -> Unit {
 pub fn shake256_squeeze(
   out : ArrayView[Byte],
   outlen : UInt,
-  state : KeccakState
+  state : KeccakState,
 ) -> Unit {
   state.pos = keccak_squeeze(out, outlen, state.s, state.pos, SHAKE256_RATE)
 }
@@ -541,7 +541,7 @@ pub fn shake256_squeeze(
 pub fn shake256_absorb_once(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt
+  inlen : UInt,
 ) -> Unit {
   keccak_absorb_once(state.s, SHAKE256_RATE, input, inlen, 0x1F)
   state.pos = SHAKE256_RATE
@@ -553,7 +553,7 @@ pub fn shake256_absorb_once(
 pub fn shake256_squeezeblocks(
   out : Array[Byte],
   nblocks : UInt,
-  state : KeccakState
+  state : KeccakState,
 ) -> Unit {
   keccak_squeezeblocks(out, nblocks, state.s, SHAKE256_RATE)
 }
@@ -565,7 +565,7 @@ pub fn shake256(
   output~ : Array[Byte],
   outlen : UInt,
   input~ : Array[Byte],
-  inlen : UInt
+  inlen : UInt,
 ) -> Unit {
   let mut outlen = outlen
   let state = KeccakState::default()
@@ -583,7 +583,7 @@ pub fn shake256(
 pub fn stream128_init(
   state : KeccakState,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   dilithium_shake128_stream_init(state, seed, nonce)
 }
@@ -592,7 +592,7 @@ pub fn stream128_init(
 pub fn stream128_squeezeblocks(
   out : ArrayView[Byte],
   outblocks : UInt64,
-  state : KeccakState
+  state : KeccakState,
 ) -> Unit {
   shake128_squeezeblocks(out, outblocks.to_uint(), state)
 }
@@ -601,7 +601,7 @@ pub fn stream128_squeezeblocks(
 pub fn dilithium_shake128_stream_init(
   state : KeccakState,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   let t = [nonce.to_byte(), (nonce >> 8).to_byte()]
   state.init()
@@ -614,7 +614,7 @@ pub fn dilithium_shake128_stream_init(
 pub fn stream256_init(
   state : KeccakState,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   dilithium_shake256_stream_init(state, seed, nonce)
 }
@@ -623,7 +623,7 @@ pub fn stream256_init(
 pub fn stream256_squeezeblocks(
   out : Array[Byte],
   outblocks : UInt64,
-  state : KeccakState
+  state : KeccakState,
 ) -> Unit {
   shake256_squeezeblocks(out, outblocks.to_uint(), state)
 }
@@ -632,7 +632,7 @@ pub fn stream256_squeezeblocks(
 pub fn dilithium_shake256_stream_init(
   state : KeccakState,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   let t = [nonce.to_byte(), (nonce >> 8).to_byte()]
   state.init()

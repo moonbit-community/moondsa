@@ -18,8 +18,8 @@ fn string_view_to_bytes(s : @string.View) -> Array[Byte] {
     abort("String length must be even for hex conversion")
   }
   for i in 0..<(char_length / 2) {
-    let byte : Byte = (hex_char_to_int(s.char_at(i * 2)) * 16 +
-    hex_char_to_int(s.char_at(i * 2 + 1))).to_byte()
+    let byte : Byte = (hex_char_to_int(s.get_char(i * 2).unwrap()) * 16 +
+    hex_char_to_int(s.get_char(i * 2 + 1).unwrap())).to_byte()
     bytes.push(byte)
   }
   bytes

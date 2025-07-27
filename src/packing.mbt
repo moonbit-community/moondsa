@@ -33,7 +33,7 @@ pub fn pack_sk(
   key : Array[Byte],
   t0 : Polyveck,
   s1 : Polyvecl,
-  s2 : Polyveck
+  s2 : Polyveck,
 ) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
@@ -58,7 +58,7 @@ pub fn pack_sk(
 
 ///| Unpack secret key sk = (rho, key, tr, t0, s1, s2).
 pub fn unpack_sk(
-  sk : Array[Byte]
+  sk : Array[Byte],
 ) -> (Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyveck) {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
@@ -98,7 +98,7 @@ pub fn pack_sig(
   sig : Array[Byte],
   c : Array[Byte]?,
   z : Polyvecl,
-  h : Polyveck
+  h : Polyveck,
 ) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
@@ -140,7 +140,7 @@ pub fn pack_sig(
 
 ///| Unpack signature sig = (z, h, c).
 pub fn unpack_sig(
-  sig : Array[Byte]
+  sig : Array[Byte],
 ) -> Result[(Polyvecl, Polyveck, Array[Byte]), SignError] {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l

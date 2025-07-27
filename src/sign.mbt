@@ -1,6 +1,6 @@
 ///| return (public key, secret key)
 pub fn keypair_gen(
-  seed : Result[Array[Byte], Rand]
+  seed : Result[Array[Byte], Rand],
 ) -> (Array[Byte], Array[Byte]) {
   let init_seed : Array[Byte] = Array::make(SEEDBYTES, 0)
   let k = dilithium_context.get_params_set().k
@@ -188,7 +188,7 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
 pub fn verify(
   sig : Array[Byte],
   m : Array[Byte],
-  pk : Array[Byte]
+  pk : Array[Byte],
 ) -> Result[Unit, SignError] {
   let sign_bytes = dilithium_context.get_params_set().sign_bytes
   let beta = dilithium_context.get_params_set().beta

@@ -62,7 +62,7 @@ pub struct ParameterSet {
 ///|
 fn SecurityLevel::gen_paramset(
   self : SecurityLevel,
-  features~ : Map[String, String] = Map::new()
+  features~ : Map[String, String] = Map::new(),
 ) -> ParameterSet {
   match self {
     SecurityLevel::Dilithium2 =>

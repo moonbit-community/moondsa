@@ -232,7 +232,7 @@ pub fn rej_uniform(
   a : ArrayView[Int],
   len : Int,
   buf : Array[Byte],
-  buflen : Int
+  buflen : Int,
 ) -> Int {
   let mut cnt = 0 // Counter for accepted samples / 接受样本的计数器
   let mut pos = 0 // Position in input buffer / 输入缓冲区中的位置
@@ -287,7 +287,7 @@ pub fn rej_eta(
   a : ArrayView[Int],
   len : Int,
   buf : Array[Byte],
-  buflen : Int
+  buflen : Int,
 ) -> UInt {
   let mut cnt = 0
   let mut pos = 0
@@ -327,7 +327,7 @@ pub fn rej_eta(
 pub fn poly_uniform_eta(
   self : Poly,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   let poly_uniform_eta_nblocks : UInt = if dilithium_context.get_params_set().eta ==
     2 {
@@ -359,7 +359,7 @@ pub fn poly_uniform_eta(
 pub fn Poly::uniform_gamma1(
   self : Poly,
   seed : Array[Byte],
-  nonce : UInt16
+  nonce : UInt16,
 ) -> Unit {
   let poly_uniform_gamma1_nblocks = dilithium_context.get_params_set().poly_uniform_gamma1_nblocks
   let buflen = (poly_uniform_gamma1_nblocks * STREAM256_BLOCKBYTES).reinterpret_as_int()
