@@ -1,37 +1,46 @@
 ///|
-/// Generates a cryptographic key pair for the Dilithium digital signature scheme.
+/// Generates a cryptographic key pair for the Dilithium post-quantum signature scheme.
 ///
-/// This function implements the key generation algorithm as specified in the
-/// NIST FIPS 204 standard. It generates a public/private key pair suitable for
-/// use with the Dilithium signature scheme.
+/// This function implements the key generation algorithm from the NIST FIPS 204 standard.
+/// It constructs a Module-LWE (MLWE) key pair where the public key is derived from
+/// the secret key through matrix multiplication in the polynomial ring Z_q[X]/(X^N + 1).
 ///
-/// # Key Generation Process
+/// # Algorithm Overview
 ///
-/// The key generation involves:
-/// 1. Generating or using provided random seed material
-/// 2. Expanding the seed into cryptographic keys using SHAKE256
-/// 3. Sampling secret polynomials with specific distributions
-/// 4. Computing the public matrix and public key
-/// 5. Packing the keys into standardized formats
+/// The key generation follows the MLWE construction:
+/// 1. Generate random seed ρ for matrix expansion and seed κ for secret key derivation
+/// 2. Expand ρ into matrix A ∈ R_q^{k×l} using SHAKE128 (deterministic expansion)
+/// 3. Sample secret vectors s1 ∈ R_q^l and s2 ∈ R_q^k with coefficients in {-η, ..., η}
+/// 4. Compute public vector t = A·s1 + s2 (matrix-vector multiplication)
+/// 5. Compress t into t1 (high bits) and t0 (low bits) using power-of-2 rounding
+/// 6. Pack (ρ, t1) as public key and (ρ, tr, κ, t0, s1, s2) as secret key
+///
+/// # Security Construction
+///
+/// The security relies on the hardness of the Module Learning With Errors problem:
+/// - Given (A, t), it's computationally hard to recover (s1, s2)
+/// - The error term s2 provides the "learning with errors" hardness
+/// - The rounding of t provides compression while maintaining security
 ///
 /// # Parameters
 ///
 /// * `seed` : Either:
-///   - `Ok(seed_bytes)`: A 32-byte seed for deterministic key generation
-///   - `Err(rand)`: A random number generator for non-deterministic generation
+///   - `Ok(seed_bytes)`: 32-byte seed for deterministic key generation (ρ = seed)
+///   - `Err(rand)`: Random number generator for non-deterministic generation
 ///
 /// # Returns
 ///
 /// A tuple `(public_key, secret_key)` where:
-/// - `public_key`: Byte array containing the packed public key
-/// - `secret_key`: Byte array containing the packed secret key
+/// - `public_key`: Packed (ρ, t1) - matrix seed + compressed public vector
+/// - `secret_key`: Packed (ρ, tr, κ, t0, s1, s2) - complete key material
 ///
-/// # Key Sizes
+/// # Key Sizes by Security Level
 ///
-/// The key sizes depend on the current security level:
-/// - Dilithium-2: 1312-byte public key, 2528-byte secret key
-/// - Dilithium-3: 1952-byte public key, 4016-byte secret key  
-/// - Dilithium-5: 2592-byte public key, 4864-byte secret key
+/// | Level | Public Key | Secret Key | Security |
+/// |-------|------------|------------|----------|
+/// | 2     | 1312 bytes | 2528 bytes | 128-bit  |
+/// | 3     | 1952 bytes | 4016 bytes | 192-bit  |
+/// | 5     | 2592 bytes | 4864 bytes | 256-bit  |
 pub fn keypair_gen(
   seed : Result[Array[Byte], Rand],
 ) -> (Array[Byte], Array[Byte]) {
@@ -64,7 +73,11 @@ pub fn keypair_gen(
     mat.push(Polyvecl::default())
   }
 
-  // Get randomness for rho, rhoprime and key
+  // Step 1: Derive cryptographic seeds from master seed
+  // SHAKE256(seed) → (ρ, ρ', κ) where:
+  // - ρ: 32-byte seed for matrix A expansion
+  // - ρ': 64-byte seed for secret vector sampling  
+  // - κ: 32-byte seed for secret key derivation
   shake256(
     output=seedbuf,
     (2 * SEEDBYTES + CRHBYTES).reinterpret_as_uint(),
@@ -77,74 +90,107 @@ pub fn keypair_gen(
   rhoprime.append(seedbuf[SEEDBYTES:SEEDBYTES + CRHBYTES].to_array())
   key.clear()
   key.append(seedbuf[SEEDBYTES + CRHBYTES:].to_array())
-  // Expand matrix
+
+  // Step 2: Construct MLWE instance
+  // Expand ρ into matrix A ∈ R_q^{k×l} using SHAKE128
+  // Each entry A[i][j] is a polynomial in Z_q[X]/(X^N + 1)
   Polyvecl::matrix_expand(mat, rho)
-  // Sample short vectors s1 and s2
+
+  // Step 3: Sample secret vectors
+  // s1 ∈ R_q^l: coefficients sampled uniformly from {-η, ..., η}
+  // s2 ∈ R_q^k: coefficients sampled uniformly from {-η, ..., η}
+  // These form the secret key: (s1, s2)
   s1.uniform_eta(rhoprime, 0)
   s2.uniform_eta(rhoprime, l.to_uint16())
-  // Matrix-vector multiplication
+
+  // Step 4: Compute public vector
+  // t = A·s1 + s2 ∈ R_q^k
+  // This is the MLWE instance: (A, t) where t = A·s1 + s2
   let s1hat = s1.copy()
-  s1hat.ntt()
-  polyvec_matrix_pointwise_montgomery(t1, mat, s1hat)
+  s1hat.ntt()  // Convert s1 to NTT domain for efficient multiplication
+  polyvec_matrix_pointwise_montgomery(t1, mat, s1hat)  // t1 = A·s1
   t1.reduce()
-  t1.invntt_tomont()
-  // Add error vector s2
-  t1.add(s2)
-  // Extract t1 and write public key
+  t1.invntt_tomont()  // Convert back from NTT domain
+  t1.add(s2)  // t1 = A·s1 + s2
+
+  // Step 5: Compress public vector
+  // Apply power-of-2 rounding: t = t1·2^D + t0
+  // t1 contains high bits (public), t0 contains low bits (secret)
   t1.caddq()
   t1.power2round(t0)
   let pk = pack_pk(rho, t1)
 
-  // Compute H(rho, t1) and write secret key
+  // Step 6: Derive public key commitment
+  // tr = H(pk) serves as commitment to public key
+  // Used during signing to bind signatures to this specific key
   shake256(
     output=tr,
     SEEDBYTES.reinterpret_as_uint(),
     input=pk,
     publickey_bytes.reinterpret_as_uint(),
   )
+
+  // Step 7: Pack complete key material
+  // Public key: (ρ, t1) - matrix seed + compressed public vector
+  // Secret key: (ρ, tr, κ, t0, s1, s2) - complete MLWE instance
   let sk = pack_sk(rho, tr, key, t0, s1, s2)
   (pk, sk)
 }
 
 ///|
-/// Creates a digital signature for a message using the Dilithium post-quantum
-/// signature algorithm.
+/// Creates a digital signature for a message using the Fiat-Shamir with Aborts signature scheme.
 ///
-/// This function implements the signing algorithm as specified in NIST FIPS 204.
-/// It generates a signature that can be verified using the corresponding public key.
-/// The signing process uses rejection sampling to ensure signature security.
+/// This implements the Dilithium signature algorithm using rejection sampling to ensure
+/// signature security. The process follows the "Fiat-Shamir with Aborts" paradigm where
+/// the signer repeatedly samples randomness until obtaining a valid signature.
 ///
-/// # Signing Process
+/// # Algorithm Overview
 ///
-/// The signature generation involves:
-/// 1. Deriving randomness from the secret key and message
-/// 2. Sampling random masking polynomials
-/// 3. Computing the commitment vector
-/// 4. Generating the challenge polynomial via hash function
-/// 5. Computing the response vector with rejection sampling
-/// 6. Packing the signature components
+/// The signing process implements the following steps:
+/// 1. Derive deterministic randomness: μ = H(tr || m) where tr = H(pk)
+/// 2. Sample masking vector y ∈ R_q^l with coefficients in [-γ1+β, γ1-β]
+/// 3. Compute commitment w = A·y (matrix-vector multiplication)
+/// 4. Decompose w = w1·2^D + w0 using power-of-2 rounding
+/// 5. Compute challenge c = H(μ || w1) (hash-based challenge)
+/// 6. Compute response z = y + c·s1
+/// 7. Check rejection conditions: ||z||_∞ < γ1-β and ||w0-c·s2||_∞ < γ2-β
+/// 8. If rejected, restart with fresh randomness
+/// 9. Compute hints h for w1 reconstruction
+/// 10. Pack signature as (c, z, h)
+///
+/// # Security Mechanism
+///
+/// The rejection sampling ensures:
+/// - Signature distributions are independent of secret key
+/// - No information leakage through failed attempts
+/// - Valid signatures satisfy norm bounds for verification
 ///
 /// # Parameters
 ///
-/// * `message` : The message data to be signed as a byte array
-/// * `secret_key` : The secret key generated by `crypto_sign_keypair`
+/// * `message` : Byte array containing the message to be signed
+/// * `secret_key` : Packed secret key containing (ρ, tr, κ, t0, s1, s2)
 ///
 /// # Returns
 ///
-/// The digital signature as a byte array in the standardized format.
+/// Byte array containing the signature σ = (c, z, h) where:
+/// - c: Challenge polynomial (seed for reconstruction)
+/// - z: Response vector with coefficients in [-γ1+β, γ1+β]
+/// - h: Hint vector for w1 reconstruction
 ///
-/// # Signature Sizes
+/// # Signature Structure by Security Level
 ///
-/// Signature sizes depend on the security level:
-/// - Dilithium-2: 2420 bytes
-/// - Dilithium-3: 3293 bytes
-/// - Dilithium-5: 4595 bytes
+/// | Level | Structure | Size |
+/// |-------|-----------|------|
+/// | 2     | (c, z, h) | 2420 bytes |
+/// | 3     | (c, z, h) | 3293 bytes |
+/// | 5     | (c, z, h) | 4595 bytes |
 ///
-/// # Panics
+/// # Rejection Sampling
 ///
-/// Panics if an internal error occurs during signature generation. This should
-/// not happen under normal circumstances and indicates a serious implementation
-/// issue.
+/// The algorithm uses rejection sampling to ensure:
+/// - z has small coefficients (prevents key recovery)
+/// - w0-c·s2 has small coefficients (prevents forgery)
+/// - Expected number of iterations is small (≈ 2.2 for typical parameters)
 pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let polyw1_packedbytes = dilithium_context.get_params_set().polyw1_packedbytes
@@ -153,7 +199,9 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   let beta = dilithium_context.get_params_set().beta
   let omega = dilithium_context.get_params_set().omega
   let sign_bytes = dilithium_context.get_params_set().sign_bytes
-  // `key` and `mu` are concatenated
+  // Step 1: Derive message digest
+  // μ = H(tr || m) where tr = H(pk) is the public key commitment
+  // This binds the signature to both the message and the public key
   let keymu : Array[Byte] = Array::make(SEEDBYTES + CRHBYTES, 0)
   let mat : Array[Polyvecl] = Array::new()
   let y : Polyvecl = Polyvecl::default()
@@ -161,47 +209,64 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   let w0 : Polyveck = Polyveck::default()
   let h = Polyveck::default()
   let cp = Poly::default()
-  let state = KeccakState::default() //shake256_init()
+  let state = KeccakState::default()
   let rhoprime : Array[Byte] = Array::make(CRHBYTES, 0)
   let (rho, key, tr, t0, s1, s2) = unpack_sk(sk)
   for i in 0..<k {
     mat.push(Polyvecl::default())
   }
 
-  // set keymu from key
+  // Construct key || message digest: keymu = key || μ
   for i in 0..<SEEDBYTES {
     keymu[i] = key[i]
   }
 
-  // Compute CRH(tr, msg)
+  // Compute μ = H(tr || m) - message digest for challenge generation
   shake256_absorb(state, tr, SEEDBYTES.reinterpret_as_uint())
   shake256_absorb(state, m, m.length().reinterpret_as_uint())
   shake256_finalize(state)
   shake256_squeeze(keymu[SEEDBYTES:], CRHBYTES.reinterpret_as_uint(), state)
+
+  // Step 2: Generate fresh randomness for masking
+  // ρ' = H(keymu) - used to sample fresh y for each attempt
   shake256(
     output=rhoprime,
     CRHBYTES.reinterpret_as_uint(),
     input=keymu,
     (SEEDBYTES + CRHBYTES).reinterpret_as_uint(),
   )
-  // Expand matrix and transform vectors
+
+  // Step 3: Prepare matrices for efficient computation
+  // Expand ρ into matrix A ∈ R_q^{k×l} (same as key generation)
   Polyvecl::matrix_expand(mat, rho)
-  s1.ntt()
-  s2.ntt()
-  t0.ntt()
+  
+  // Convert secret vectors to NTT domain for efficient multiplication
+  s1.ntt()  // s1 in NTT domain
+  s2.ntt()  // s2 in NTT domain
+  t0.ntt()  // t0 in NTT domain
+
   let mut nonce : UInt16 = 0
   let sig : Array[Byte] = Array::make(sign_bytes, 0)
+
+  // Step 4: Fiat-Shamir with Aborts loop
+  // Repeat until valid signature is found
   while true {
-    // Sample intermediate vector y
+    // Step 4a: Sample masking vector y ∈ R_q^l
+    // y has coefficients uniformly distributed in [-γ1+β, γ1-β]
     y.uniform_gamma1(rhoprime, nonce)
     nonce += 1
-    // Matrix-vector multiplication
+
+    // Step 4b: Compute commitment w = A·y
+    // w ∈ R_q^k represents the commitment before challenge
     let z = y.copy()
-    z.ntt()
-    polyvec_matrix_pointwise_montgomery(w1, mat, z)
+    z.ntt()  // Convert y to NTT domain
+    polyvec_matrix_pointwise_montgomery(w1, mat, z)  // w1 = A·y
     w1.reduce()
-    w1.invntt_tomont()
-    // Decompose w and call the random oracle
+    w1.invntt_tomont()  // Convert back from NTT domain
+
+    // Step 4c: Decompose commitment for compression
+    // w = w1·2^D + w0 where w1 are high bits, w0 are low bits
+    // w1 is used for challenge generation, w0 is discarded
     w1.caddq()
     w1.decompose(w0)
     w1.pack_w1(sig)
@@ -256,41 +321,61 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
 }
 
 ///|
-/// Verifies a Dilithium digital signature against a message using the provided
-/// public key.
+/// Verifies a Dilithium signature using the Fiat-Shamir verification equation.
 ///
-/// This function implements the signature verification algorithm as specified
-/// in NIST FIPS 204. It checks whether a given signature was created by the
-/// private key corresponding to the provided public key for the specified message.
+/// This function implements the verification counterpart to the `sign` function,
+/// checking whether a signature σ = (c, z, h) is valid for message m under public key pk = (ρ, t1).
+/// It completes the signature lifecycle started by `keypair_gen` and `sign`.
 ///
-/// # Verification Process
+/// # Relationship to Key Generation and Signing
 ///
-/// The verification involves:
-/// 1. Parsing and validating the signature format
-/// 2. Checking bounds on signature components
-/// 3. Recomputing the challenge polynomial from the message
-/// 4. Verifying the algebraic relationship between signature components
-/// 5. Checking norm bounds to ensure signature validity
+/// This verification function validates signatures created by the `sign` function using
+/// public keys generated by `keypair_gen`. The verification process reconstructs the
+/// cryptographic proof that the signer knew the secret key corresponding to the public key.
+///
+/// # Verification Equation
+///
+/// The verifier checks the Fiat-Shamir equation: c = H(μ || w1) where:
+/// - μ = H(H(ρ, t1) || m) - message digest (same computation as in `sign`)
+/// - w1 = HighBits(A·z - c·t1) - reconstructed commitment using signature components
+/// - HighBits() extracts high-order bits after rounding (inverse of `sign`'s decomposition)
+///
+/// # Algorithm Steps
+///
+/// 1. Parse signature: σ = (c, z, h) and public key: pk = (ρ, t1) (inverse of `pack_sig`)
+/// 2. Verify signature format and component bounds (security check)
+/// 3. Compute μ = H(H(ρ, t1) || m) - same message digest as used in `sign`
+/// 4. Expand ρ into matrix A ∈ R_q^{k×l} using SHAKE128 (same expansion as `keypair_gen`)
+/// 5. Reconstruct w1 = HighBits(A·z - c·t1) using hints h (inverse of `sign`'s hint generation)
+/// 6. Compute c' = H(μ || w1) - expected challenge (same computation as in `sign`)
+/// 7. Verify c = c' - signature validity (final check)
+///
+/// # Security Properties
+///
+/// The verification ensures the signature proves knowledge of the secret key without revealing it:
+/// - Signature components are within valid ranges (prevents forgery)
+/// - Response vector z has bounded coefficients (prevents key recovery)
+/// - Reconstructed commitment matches expected value (proves secret key knowledge)
+/// - No forgery attempts succeed (maintains unforgeability)
 ///
 /// # Parameters
 ///
-/// * `sig` : The digital signature to verify as a byte array
-/// * `m` : The original message that was signed as a byte array
-/// * `pk` : The public key used for verification as a byte array
+/// * `sig` : Byte array containing signature σ = (c, z, h) from `sign`
+/// * `m` : Byte array containing the original message that was signed
+/// * `pk` : Byte array containing public key pk = (ρ, t1) from `keypair_gen`
 ///
 /// # Returns
 ///
-/// - `Ok(())`: The signature is valid for the given message and public key
-/// - `Err(SignError)`: The signature is invalid, with specific error information
+/// - `Ok(())`: Signature is valid - verification equation holds, proving the signer knew the secret key
+/// - `Err(SignError)`: Signature is invalid - specific failure reason indicating potential forgery or corruption
 ///
-/// # Error Conditions
+/// # Verification Failures
 ///
-/// Returns `SignError` for:
-/// - Incorrect signature length
-/// - Invalid signature format or encoding
-/// - Signature components out of valid bounds
-/// - Failed algebraic verification
-/// - Invalid norm bounds on signature components
+/// Common failure modes indicate security violations:
+/// - Invalid signature format (wrong length or encoding) - malformed signature
+/// - Response vector z has coefficients outside bounds - potential key recovery attack
+/// - Reconstructed commitment doesn't match challenge - signature forgery attempt
+/// - Signature components don't satisfy norm constraints - malformed signature
 pub fn verify(
   sig : Array[Byte],
   m : Array[Byte],
