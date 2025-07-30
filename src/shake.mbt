@@ -1,7 +1,36 @@
-///| Reference: https://github.com/Argyle-Software/dilithium/blob/master/src/fips202.rs
+///|
+/// SHAKE (Secure Hash Algorithm Keccak) extendable-output functions for Dilithium.
 ///
-/// SHAKE128 and SHAKE256 Extendable-Output Functions (XOF) Implementation
-/// SHAKE128 和 SHAKE256 可扩展输出函数 (XOF) 的实现
+/// This module implements the SHAKE128 and SHAKE256 extendable-output functions (XOF)
+/// based on the Keccak sponge construction. These functions serve as the primary
+/// source of cryptographic randomness and hash operations within the Dilithium
+/// signature scheme.
+///
+/// # Cryptographic Role
+///
+/// SHAKE functions are used throughout Dilithium for:
+/// - Seed expansion during key generation
+/// - Challenge polynomial generation during signing
+/// - Random polynomial sampling
+/// - Hash-based message processing
+///
+/// # Implementation Details
+///
+/// The implementation follows the NIST FIPS 202 standard specification and uses
+/// the Keccak[1600] permutation with appropriate padding and domain separation.
+///
+/// # References
+///
+/// - NIST FIPS 202: SHA-3 Standard - Permutation-Based Hash and Extendable-Output Functions
+/// - Keccak Team: https://keccak.team/
+/// - Original reference: https://github.com/Argyle-Software/dilithium/blob/master/src/fips202.rs
+///
+/// # Keccak Algorithm Overview (Sponge Construction)
+///
+/// The Keccak algorithm operates as a sponge construction with three main phases:
+///
+/// 1. **Absorbing Phase**: Input data is absorbed into a fixed-size state.
+///    Data is processed in blocks, with permutation applied after each block.
 ///
 /// This file implements the SHAKE128 and SHAKE256 extendable-output functions
 /// based on the Keccak algorithm, which forms the foundation of SHA-3.
@@ -38,34 +67,79 @@
 ///| SHAKE256 rate (block size) in bytes | SHAKE256 的比特率（块大小），以字节为单位
 // pub const SHAKE256_RATE : UInt = 136
 
-///| Number of rounds in Keccak-f[1600] permutation | Keccak-f[1600] 置换的轮数
+///|
+/// Defines the number of rounds in the Keccak-f\[1600] permutation function.
+///
+/// The Keccak-f\[1600] permutation is the core cryptographic primitive used in
+/// the SHAKE128 and SHAKE256 extendable-output functions. This constant
+/// specifies that exactly 24 rounds of transformation are applied to the
+/// 1600-bit state during each permutation operation, which is essential for
+/// achieving the required security properties of the Keccak algorithm.
 const NROUNDS : Int = 24
 
-///| Keccak state structure | Keccak 状态结构
-/// Contains the 5x5 state array and current position
-/// 包含 5x5 状态数组和当前位置
+///|
+/// Internal state structure for Keccak cryptographic hash functions.
+///
+/// Fields:
+///
+/// * `s` : 25-element flattened representation of the 5x5 Keccak state matrix,
+///   where each element is a 64-bit word.
+/// * `pos` : Current byte position within the rate block, used to track
+///   progress during incremental absorption and squeezing operations.
 pub struct KeccakState {
   s : FixedArray[UInt64] // 25-element flattened state array | 25 元素的展平状态数组
   mut pos : UInt // Current position in the rate block | 当前在比特率块中的位置
 } derive(Show)
 
-///| Default initialization for KeccakState | KeccakState 的默认初始化
+///|
+/// Creates a default instance of `KeccakState` with all state elements
+/// initialized to zero.
+///
+/// Returns a new `KeccakState` with:
+///
+/// * `s`: A 25-element array of 64-bit unsigned integers, all initialized to 0
+/// * `pos`: Current position set to 0
 pub impl Default for KeccakState with default() {
   { s: FixedArray::make(25, 0), pos: 0 }
 }
 
-///| Initialize Keccak state to all zeros | 将 Keccak 状态初始化为全零
+///|
+/// Resets the Keccak state to its initial clean state with all fields zeroed.
+///
+/// Parameters:
+///
+/// * `self` : The KeccakState instance to be initialized.
 pub fn KeccakState::init(self : KeccakState) -> Unit {
   self.s.fill(0)
   self.pos = 0
 }
 
-///| Circular left rotation on 64-bit integer | 64 位整数的循环左移
+///|
+/// Performs circular left rotation on a 64-bit unsigned integer by the
+/// specified number of bit positions.
+///
+/// Parameters:
+///
+/// * `value` : The 64-bit unsigned integer to rotate.
+/// * `positions` : The number of bit positions to rotate left. Should be
+///   between 0 and 63 for meaningful results.
+///
+/// Returns the rotated 64-bit unsigned integer where bits that shift beyond the
+/// left edge wrap around to the right edge.
 fn KeccakState::rol(a : UInt64, offset : Int) -> UInt64 {
   (a << offset) | (a >> (64 - offset))
 }
 
-///| Load 64-bit integer from 8-byte array (little-endian) | 从 8 字节数组加载 64 位整数（小端序）
+///|
+/// Converts an 8-byte array into a 64-bit unsigned integer using little-endian
+/// byte ordering.
+///
+/// Parameters:
+///
+/// * `x` : An array of 8 bytes to be converted to a 64-bit integer.
+///
+/// Returns a `UInt64` value constructed from the input bytes in little-endian
+/// format.
 pub fn load64(x : Array[Byte]) -> UInt64 {
   let mut r = 0UL
   for i in 0..<8 {
@@ -75,14 +149,37 @@ pub fn load64(x : Array[Byte]) -> UInt64 {
   r
 }
 
-///| Store 64-bit integer to 8-byte array (little-endian) | 将 64 位整数存储到 8 字节数组（小端序）
+///|
+/// Stores a 64-bit unsigned integer into an 8-byte array using little-endian
+/// byte order.
+///
+/// Parameters:
+///
+/// * `x` : The 8-byte array where the integer will be stored.
+/// * `u` : The 64-bit unsigned integer to be stored.
 pub fn store64(x : Array[Byte], u : UInt64) -> Unit {
   for i in 0..<8 {
     x[i] = (u >> (8 * i)).to_byte()
   }
 }
 
-///| Round constants for Keccak-f[1600] permutation | Keccak-f[1600] 置换的轮常数
+///|
+/// Precomputed round constants used in the Keccak-f\[1600] permutation
+/// function.
+///
+/// This array contains the 24 round constants that are XORed with the state
+/// during the iota step of each round in the Keccak-f\[1600] permutation. Each
+/// constant is a 64-bit value that was derived from a linear feedback shift
+/// register (LFSR) as specified in the Keccak specification. These constants
+/// ensure that each round of the permutation is cryptographically distinct and
+/// contribute to the security properties of the SHAKE128 and SHAKE256
+/// functions.
+///
+/// The constants are applied in order during the 24 rounds of the Keccak
+/// permutation, with `keccakf_round_constants[i]` being used in round `i`. The
+/// values follow the official Keccak specification and are critical for the
+/// correctness of the cryptographic hash function implementation.
+///
 let keccakf_round_constants = [
   0x0000000000000001UL, 0x0000000000008082UL, 0x800000000000808aUL, 0x8000000080008000UL,
   0x000000000000808bUL, 0x0000000080000001UL, 0x8000000080008081UL, 0x8000000000008009UL,
@@ -367,9 +464,23 @@ fn keccak_absorb(
   state.pos = pos + inlen
 }
 
-///| Finalize absorb phase | 完成吸收阶段
-/// Adds padding and termination bits to mark end of input
-/// 添加填充和终止位以标记输入结束
+///|
+/// Finalizes the Keccak absorb phase by adding appropriate padding and
+/// termination bits to mark the end of input data.
+///
+/// Parameters:
+///
+/// * `state` : The Keccak state array containing 25 64-bit words representing
+///   the internal state.
+/// * `pos` : Current position in bytes within the rate block where the next
+///   input byte would be absorbed.
+/// * `rate` : The rate parameter in bytes, determining the size of the
+///   absorbing capacity for this Keccak variant.
+/// * `padding_byte` : The padding byte value that identifies the specific
+///   Keccak variant (e.g., 0x1F for SHAKE, 0x06 for SHA-3).
+///
+/// Panics if `rate` is less than 8 bytes, as this would cause an underflow when
+/// calculating the final state index.
 fn keccak_finalize(
   s : FixedArray[UInt64],
   pos : UInt,
@@ -383,9 +494,25 @@ fn keccak_finalize(
   s[index] = s[index] ^ (1UL << 63)
 }
 
-///| Incremental squeeze for Keccak | Keccak 的增量挤压
-/// Extracts output bytes from state, permuting as needed
-/// 从状态中提取输出字节，根据需要进行置换
+///|
+/// Extracts output bytes from the Keccak state, applying permutation when
+/// necessary.
+///
+/// This function implements the "squeeze" phase of the Keccak sponge
+/// construction. It extracts the requested number of output bytes from the
+/// internal state, automatically applying the Keccak-f\[1600] permutation when
+/// the current block is exhausted and more output is needed.
+///
+/// Parameters:
+///
+/// * `out` : The output buffer to write the extracted bytes to.
+/// * `outlen` : The number of bytes to extract.
+/// * `s` : The Keccak state array (25 64-bit words).
+/// * `pos` : The current position within the rate block (in bytes).
+/// * `r` : The rate (block size) in bytes for the specific Keccak variant.
+///
+/// Returns the updated position within the rate block after extraction.
+///
 fn keccak_squeeze(
   out : ArrayView[Byte],
   outlen : UInt,
@@ -448,9 +575,24 @@ fn keccak_absorb_once(
   s[(r - 1) / 8] = s[(r - 1) / 8] ^ (1UL << 63)
 }
 
-///| Squeeze full blocks from Keccak | 从 Keccak 挤压完整块
-/// Extracts multiple full blocks of output data
-/// 提取多个完整的输出数据块
+///|
+/// Extracts multiple full blocks of output data from the Keccak state by
+/// repeatedly applying the Keccak permutation function.
+///
+/// Parameters:
+///
+/// * `out` : `ArrayView[Byte]` - The output buffer where extracted blocks will
+///   be written.
+/// * `nblocks` : `UInt` - The number of complete blocks to extract from the
+///   state.
+/// * `s` : `FixedArray[UInt64]` - The 25-element Keccak state array containing
+///   the internal state.
+/// * `r` : `UInt` - The rate parameter (block size in bytes) for the Keccak
+///   variant being used.
+///
+/// Panics if the output buffer `out` is too small to accommodate `nblocks * r`
+/// bytes.
+///
 fn keccak_squeezeblocks(
   out : ArrayView[Byte],
   nblocks : UInt,
@@ -475,9 +617,37 @@ fn keccak_squeezeblocks(
   }
 }
 
-///| SHAKE128 incremental absorb | SHAKE128 增量吸收
-/// Absorbs input data into SHAKE128 state
-/// 将输入数据吸收到 SHAKE128 状态中
+///|
+/// Incrementally absorbs input data into a SHAKE128 state for cryptographic
+/// hashing.
+///
+/// This function is part of the SHAKE128 extendable-output function (XOF)
+/// implementation. It processes input data in chunks, updating the internal
+/// Keccak state without finalizing the hash. Multiple calls to this function
+/// can be made to absorb data incrementally before calling the finalize
+/// function.
+///
+/// Parameters:
+///
+/// * `state` : The SHAKE128 state to absorb data into. The state maintains the
+///   current position and internal Keccak state array.
+/// * `input` : The byte array containing the data to be absorbed into the hash
+///   state.
+/// * `inlen` : The number of bytes from the input array to process. This allows
+///   processing only a portion of the input array if needed.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = KeccakState::default()
+/// let data : Array[Byte] = "Hello, World!".to_bytes().to_array()
+/// shake128_absorb(state, data, data.length().reinterpret_as_uint())
+/// // Continue absorbing more data if needed
+/// let more_data : Array[Byte] = " More data".to_bytes().to_array()
+/// shake128_absorb(state, more_data, more_data.length().reinterpret_as_uint())
+/// // Finally call shake128_finalize(state) to complete the absorption phase
+/// ```
+///
 pub fn shake128_absorb(
   state : KeccakState,
   input : Array[Byte],
@@ -486,17 +656,48 @@ pub fn shake128_absorb(
   keccak_absorb(state, SHAKE128_RATE, input, inlen)
 }
 
-///| SHAKE128 finalize | SHAKE128 完成
-/// Finalizes SHAKE128 absorb phase with proper padding
-/// 使用适当的填充完成 SHAKE128 吸收阶段
+///|
+/// Finalizes the SHAKE128 absorbing phase by applying proper padding and
+/// transitions the state to the squeezing phase.
+///
+/// Parameters:
+///
+/// * `state` : The SHAKE128 state that has been absorbing input data and needs
+///   to be finalized.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = KeccakState::default()
+/// let input : Array[Byte] = "Hello, World!".to_bytes().to_array()
+/// shake128_absorb(state, input, input.length().reinterpret_as_uint())
+/// shake128_finalize(state)
+/// // State is now ready for squeezing output
+/// ```
+///
 pub fn shake128_finalize(state : KeccakState) -> Unit {
   keccak_finalize(state.s, state.pos, SHAKE128_RATE, 0x1F)
   state.pos = SHAKE128_RATE
 }
 
-///| SHAKE128 squeeze blocks | SHAKE128 挤压块
-/// Squeezes full blocks from SHAKE128 state
-/// 从 SHAKE128 状态挤压完整块
+///|
+/// Extracts full blocks of output data from a SHAKE128 state.
+///
+/// Parameters:
+///
+/// * `output` : The buffer to store the extracted output bytes.
+/// * `nblocks` : The number of complete blocks to extract from the state.
+/// * `s` : The SHAKE128 state to extract data from.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = KeccakState::default()
+/// // ... after initializing and finalizing the state ...
+/// let output: Array[Byte] = Array::make(336, 0) // 2 blocks * 168 bytes per block
+/// shake128_squeezeblocks(output, 2, state)
+/// ```
+///
 pub fn shake128_squeezeblocks(
   output : ArrayView[Byte],
   nblocks : UInt,
@@ -505,9 +706,41 @@ pub fn shake128_squeezeblocks(
   keccak_squeezeblocks(output, nblocks, s.s, SHAKE128_RATE)
 }
 
-///| SHAKE256 incremental absorb | SHAKE256 增量吸收
-/// Absorbs input data into SHAKE256 state
-/// 将输入数据吸收到 SHAKE256 状态中
+///|
+/// Incrementally absorbs input data into the SHAKE256 state during the
+/// absorbing phase.
+///
+/// This function allows you to feed data to SHAKE256 in multiple chunks rather
+/// than all at once. The state maintains its position internally, so you can
+/// call this function multiple times with different input chunks before
+/// finalizing and squeezing output.
+///
+/// Parameters:
+///
+/// * `state` (`KeccakState`) : The SHAKE256 state object that maintains the
+///   internal hash state.
+/// * `input` (`Array[Byte]`) : The byte array containing the data to absorb.
+/// * `inlen` (`UInt`) : The number of bytes to absorb from the input array.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = @ruifeng/moondsa.KeccakState::default()
+/// let chunk1 : Array[Byte] = b"Hello, ".to_array()
+/// let chunk2 : Array[Byte] = b"World!".to_array()
+///
+/// // Absorb data incrementally
+/// @ruifeng/moondsa.shake256_absorb(state, chunk1, 7U)
+/// @ruifeng/moondsa.shake256_absorb(state, chunk2, 6U)
+///
+/// // Finalize before squeezing
+/// @ruifeng/moondsa.shake256_finalize(state)
+///
+/// // Now squeeze output
+/// let output : Array[Byte] = Array::make(32, 0)
+/// @ruifeng/moondsa.shake256_squeeze(output, 32U, state)
+/// ```
+///
 pub fn shake256_absorb(
   state : KeccakState,
   input : Array[Byte],
@@ -516,17 +749,54 @@ pub fn shake256_absorb(
   keccak_absorb(state, SHAKE256_RATE, input, inlen)
 }
 
-///| SHAKE256 finalize | SHAKE256 完成
-/// Finalizes SHAKE256 absorb phase with proper padding
-/// 使用适当的填充完成 SHAKE256 吸收阶段
+///|
+/// Finalizes the SHAKE256 absorbing phase by applying proper padding and
+/// preparing the state for output extraction.
+///
+/// Parameters:
+///
+/// * `state` : The SHAKE256 Keccak state to finalize, which has been absorbing
+///   input data.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = @ruifeng/moondsa.KeccakState::default()
+/// let input : Array[Byte] = b"hello world".to_array()
+/// @ruifeng/moondsa.shake256_absorb(state, input, 11)
+/// @ruifeng/moondsa.shake256_finalize(state)
+/// // State is now ready for squeezing output
+/// ```
+///
 pub fn shake256_finalize(state : KeccakState) -> Unit {
   keccak_finalize(state.s, state.pos, SHAKE256_RATE, 0x1F)
   state.pos = SHAKE256_RATE
 }
 
-///| SHAKE256 squeeze arbitrary bytes | SHAKE256 挤压任意字节
-/// Squeezes any number of bytes from SHAKE256 state
-/// 从 SHAKE256 状态挤压任意数量的字节
+///|
+/// Extracts output bytes from a SHAKE256 state in the squeezing phase.
+///
+/// Parameters:
+///
+/// * `out` : The output buffer to write the extracted bytes to.
+/// * `outlen` : The number of bytes to extract from the state.
+/// * `state` : The SHAKE256 state to squeeze from. The state's internal
+///   position will be updated to reflect the new position after squeezing.
+///
+/// Example:
+///
+/// ```moonbit
+/// // Initialize SHAKE256 state and absorb some data
+/// let state = KeccakState::default()
+/// let input : Array[Byte] = "Hello, World!".to_bytes().to_array()
+/// shake256_absorb(state, input, input.length().reinterpret_as_uint())
+/// shake256_finalize(state)
+///
+/// // Squeeze 32 bytes of output
+/// let output : Array[Byte] = Array::make(32, 0)
+/// shake256_squeeze(output[:], 32, state)
+/// ```
+///
 pub fn shake256_squeeze(
   out : ArrayView[Byte],
   outlen : UInt,
@@ -535,9 +805,25 @@ pub fn shake256_squeeze(
   state.pos = keccak_squeeze(out, outlen, state.s, state.pos, SHAKE256_RATE)
 }
 
-///| SHAKE256 one-shot absorb | SHAKE256 一次性吸收
-/// Non-incremental SHAKE256 absorb for convenience
-/// 为方便使用的非增量 SHAKE256 吸收
+///|
+/// Performs complete SHAKE256 absorption in a single operation, processing all
+/// input data and finalizing the state.
+///
+/// Parameters:
+///
+/// * `state` : The Keccak state to be initialized and used for absorption.
+/// * `input` : The byte array containing the data to be absorbed.
+/// * `inlen` : The number of bytes from the input array to process.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = @ruifeng/moondsa.KeccakState::default()
+/// let data : Array[Byte] = [0, 1, 2, 3]
+/// @ruifeng/moondsa.shake256_absorb_once(state, data, 4)
+/// // State is now ready for squeezing output
+/// ```
+///
 pub fn shake256_absorb_once(
   state : KeccakState,
   input : Array[Byte],
@@ -547,9 +833,27 @@ pub fn shake256_absorb_once(
   state.pos = SHAKE256_RATE
 }
 
-///| SHAKE256 squeeze blocks | SHAKE256 挤压块
-/// Squeezes full blocks from SHAKE256 state
-/// 从 SHAKE256 状态挤压完整块
+///|
+/// Extracts full blocks of output data from a SHAKE256 state.
+///
+/// Parameters:
+///
+/// * `out` : The output array to store the extracted bytes.
+/// * `nblocks` : The number of full blocks to extract from the state.
+/// * `state` : The SHAKE256 state to extract data from.
+///
+/// Examples:
+///
+/// ```moonbit
+/// // Initialize SHAKE256 state and absorb some input
+/// let state = KeccakState::default()
+/// shake256_absorb_once(state, [1, 2, 3, 4], 4)
+///
+/// // Extract 2 full blocks (272 bytes total for SHAKE256)
+/// let output : Array[Byte] = Array::make(272, 0)
+/// shake256_squeezeblocks(output, 2, state)
+/// ```
+///
 pub fn shake256_squeezeblocks(
   out : Array[Byte],
   nblocks : UInt,
@@ -580,6 +884,24 @@ pub fn shake256(
 ///|这里主要定义了一些外部api,同时为将来支持aes做准备
 
 ///|
+/// Initializes a SHAKE128 stream for Dilithium cryptographic operations.
+///
+/// Parameters:
+///
+/// * `state` : The Keccak state to be initialized for streaming operations.
+/// * `seed` : The seed bytes used for initialization (expected to be SEEDBYTES
+///   length).
+/// * `nonce` : A 16-bit nonce value to ensure unique stream initialization.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = @ruifeng/moondsa.KeccakState::default()
+/// let seed: Array[Byte] = Array::make(32, 0) // SEEDBYTES length
+/// let nonce = (42: UInt16)
+/// @ruifeng/moondsa.stream128_init(state, seed, nonce)
+/// ```
+///
 pub fn stream128_init(
   state : KeccakState,
   seed : Array[Byte],
@@ -589,6 +911,14 @@ pub fn stream128_init(
 }
 
 ///|
+/// Squeezes multiple full blocks of output data from a SHAKE128 state.
+///
+/// Parameters:
+///
+/// * `out` : The output buffer where the squeezed data will be written.
+/// * `outblocks` : The number of full blocks to squeeze from the state.
+/// * `state` : The SHAKE128 state to squeeze data from.
+///
 pub fn stream128_squeezeblocks(
   out : ArrayView[Byte],
   outblocks : UInt64,
@@ -598,6 +928,25 @@ pub fn stream128_squeezeblocks(
 }
 
 ///|
+/// Initializes a SHAKE128 stream for the CRYSTALS-Dilithium post-quantum
+/// cryptographic scheme.
+///
+/// Parameters:
+///
+/// * `state` : The Keccak state to be initialized for streaming.
+/// * `seed` : A byte array containing the seed data, expected to be of length
+///   `SEEDBYTES`.
+/// * `nonce` : A 16-bit unsigned integer used as a unique identifier for this
+///   stream instance.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = KeccakState::default()
+/// let seed: Array[Byte] = Array::make(SEEDBYTES, 0) // Create seed of appropriate size
+/// @ruifeng/moondsa.dilithium_shake128_stream_init(state, seed, (42: UInt16))
+/// ```
+///
 pub fn dilithium_shake128_stream_init(
   state : KeccakState,
   seed : Array[Byte],
@@ -611,6 +960,24 @@ pub fn dilithium_shake128_stream_init(
 }
 
 ///|
+/// Initializes a SHAKE256 stream state for cryptographic operations with a seed
+/// and nonce.
+///
+/// Parameters:
+///
+/// * `state` : The KeccakState object to be initialized for SHAKE256 streaming.
+/// * `seed` : The cryptographic seed bytes used to initialize the stream state.
+/// * `nonce` : A 16-bit nonce value to provide uniqueness for each stream
+///   initialization.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = KeccakState::default()
+/// let seed : Array[Byte] = Array::make(CRHBYTES, b'A') // 64-byte seed
+/// stream256_init(state, seed, (42: UInt16))
+/// ```
+///
 pub fn stream256_init(
   state : KeccakState,
   seed : Array[Byte],
@@ -620,6 +987,13 @@ pub fn stream256_init(
 }
 
 ///|
+/// Extracts multiple full blocks of output from a SHAKE256 stream state.
+///
+/// Parameters:
+///
+/// * `out` : The output array where the extracted bytes will be stored.
+/// * `outblocks` : The number of blocks to extract from the stream.
+/// * `state` : The SHAKE256 stream state to extract blocks from.
 pub fn stream256_squeezeblocks(
   out : Array[Byte],
   outblocks : UInt64,
@@ -629,6 +1003,24 @@ pub fn stream256_squeezeblocks(
 }
 
 ///|
+/// Initializes a SHAKE256 stream for Dilithium cryptographic operations with a
+/// seed and nonce.
+///
+/// Parameters:
+///
+/// * `state` : The Keccak state to initialize for SHAKE256 streaming.
+/// * `seed` : The cryptographic seed bytes used for initialization.
+/// * `nonce` : A 16-bit nonce value to ensure uniqueness of the stream.
+///
+/// Example:
+///
+/// ```moonbit
+/// let state = KeccakState::default()
+/// let seed : Array[Byte] = Array::make(CRHBYTES, 0) // 64-byte seed
+/// let nonce = (42: UInt16)
+/// dilithium_shake256_stream_init(state, seed, nonce)
+/// ```
+///
 pub fn dilithium_shake256_stream_init(
   state : KeccakState,
   seed : Array[Byte],

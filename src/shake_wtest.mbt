@@ -17,7 +17,7 @@ fn bytes_to_hex(bytes : Array[Byte]) -> String {
 ///| Convert string to byte array | 将字符串转换为字节数组
 fn string_to_bytes(s : String) -> Array[Byte] {
   let bytes : Array[Byte] = []
-  for charcode in s.charcodes() {
+  for charcode in s.view() {
     bytes.push(charcode.to_int().to_byte())
   }
   bytes

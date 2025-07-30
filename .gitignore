@@ -2,3 +2,5 @@ target/
 .mooncakes/
 .DS_Store
 .vscode
+.moonagent/
+CLAUDE.md

@@ -1,13 +1,75 @@
-///| a = a0 + a1 * 2 ^ D
+///|
+/// Rounding and decomposition operations for the Dilithium signature scheme.
+///
+/// This module implements specialized rounding and decomposition algorithms
+/// required by the Dilithium signature scheme. These operations are crucial
+/// for signature compression and the rejection sampling process that ensures
+/// signature security.
+///
+/// # Mathematical Background
+///
+/// The rounding operations implement specific algorithms from the Dilithium
+/// specification that enable:
+/// - Efficient signature compression
+/// - Constant-time implementation to prevent timing attacks
+/// - Correct handling of modular arithmetic in Z_q
+///
+/// # Security Considerations
+///
+/// All operations are implemented to run in constant time to prevent
+/// timing-based side-channel attacks. The decomposition functions use
+/// bit manipulation techniques to avoid conditional branches.
+///
+/// # Examples
+///
+/// ```moonbit
+/// // Power-of-2 rounding
+/// let (a0, a1) = @ruifeng/moondsa.power2round(12345)
+/// 
+/// // Decomposition for signature compression
+/// let (a0, a1) = @ruifeng/moondsa.decompose(98765)
+/// 
+/// // Hint generation for verification
+/// let hint = @ruifeng/moondsa.make_hint(a0, a1)
+/// ```
+
+///|
+/// Decomposes an integer `a` into two components `a0` and `a1` such that `a =
+/// a0 + a1 * 2^D`, where `D` is a predefined constant.
+///
+/// This function implements the power-of-2 rounding operation commonly used in
+/// lattice-based cryptography, particularly in the Dilithium digital signature
+/// scheme. The decomposition ensures that `a0` is in the range `[-2^(D-1),
+/// 2^(D-1))` and `a1` represents the higher-order bits.
+///
+/// Parameters:
+///
+/// * `a` : The integer value to be decomposed.
+///
+/// Returns a tuple `(a0, a1)` where `a0` is the low-order component and `a1` is
+/// the high-order component such that `a = a0 + a1 * 2^D`.
 pub fn power2round(a : Int) -> (Int, Int) {
   let a1 = (a + (1 << (D - 1)) - 1) >> D
   let a0 = a - (a1 << D)
   (a0, a1)
 }
 
-///| a = a0 + a1 * 2 * gamma2
-/// gamma2 = (Q - 1) / 32 or (Q - 1) / 88
-/// 
+///|
+/// Decomposes an integer into two components according to the Dilithium
+/// signature scheme's decomposition algorithm.
+///
+/// This function implements the `Decompose` operation from the Dilithium
+/// post-quantum cryptographic signature scheme. It splits an input integer `a`
+/// into two parts `a0` and `a1` such that `a = a0 + a1 * 2 * gamma2`, where
+/// `gamma2` is determined by the current Dilithium parameter set and can be
+/// either `(Q-1)/32` or `(Q-1)/88`.
+///
+/// Parameters:
+///
+/// * `a` : The integer to be decomposed.
+///
+/// Returns a tuple `(a0, a1)` where `a0` is the low-order component and `a1` is
+/// the high-order component of the decomposition.
 pub fn decompose(a : Int) -> (Int, Int) {
   let gamma2 = dilithium_context.get_params_set().gamma2
   let mut a1 = (a + 127) >> 7
@@ -26,6 +88,16 @@ pub fn decompose(a : Int) -> (Int, Int) {
 }
 
 ///|
+/// Generates a hint byte based on the decomposed polynomial coefficient
+/// components for use in the Dilithium signature scheme.
+///
+/// Parameters:
+///
+/// * `a0` : The low-order component of the decomposed coefficient.
+/// * `a1` : The high-order component of the decomposed coefficient.
+///
+/// Returns a hint byte (0 or 1) indicating whether the coefficient requires
+/// adjustment during verification.
 pub fn make_hint(a0 : Int, a1 : Int) -> Byte {
   let gamma2 = dilithium_context.get_params_set().gamma2
   let result = (a0 > gamma2).to_int() |
@@ -35,6 +107,17 @@ pub fn make_hint(a0 : Int, a1 : Int) -> Byte {
 }
 
 ///|
+/// Applies a hint to adjust the high-order bits of a polynomial coefficient in
+/// the Dilithium signature scheme.
+///
+/// Parameters:
+///
+/// * `a` : The polynomial coefficient to be adjusted.
+/// * `hint` : A hint byte that determines whether adjustment should be applied
+///   (0 = no adjustment, non-zero = apply adjustment).
+///
+/// Returns the adjusted high-order bits `a1` after applying the hint-based
+/// correction.
 pub fn use_hint(a : Int, hint : Byte) -> Int {
   let (a0, a1) = decompose(a)
   let gamma2 = dilithium_context.get_params_set().gamma2

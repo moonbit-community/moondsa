@@ -1,8 +1,63 @@
-///| D_SHL = 2^{D-1}, used for power-of-2 rounding / D_SHL = 2^{D-1}，用于2的幂次舍入
+///|
+/// Polynomial arithmetic module for the Dilithium signature scheme.
+///
+/// This module implements polynomial operations in the ring Z_q[X]/(X^N + 1),
+/// which forms the mathematical foundation of the Dilithium post-quantum
+/// signature scheme. The module provides essential operations including
+/// polynomial addition, multiplication, number-theoretic transform (NTT),
+/// and various encoding/decoding functions.
+///
+/// # Mathematical Background
+///
+/// Polynomials in this module represent elements of the quotient ring
+/// Z_q[X]/(X^N + 1), where:
+/// - Z_q is the ring of integers modulo q
+/// - X^N + 1 is the polynomial modulus
+/// - N = 256 is the polynomial degree
+/// - q = 8380417 is the prime modulus
+///
+/// # Examples
+///
+/// ```moonbit
+/// // Create a new polynomial with zero coefficients
+/// let poly = @ruifeng/moondsa.Poly::new()
+/// 
+/// // Create from coefficients
+/// let coeffs = Array::make(@ruifeng/moondsa.N, 0)
+/// coeffs[0] = 42
+/// let poly = { coeffs }
+/// ```
+
+///|
+/// Precomputed value 2^(D-1) used for efficient power-of-2 rounding operations.
+/// This constant is derived from the rounding parameter D and is used in
+/// various polynomial operations to avoid repeated computation.
 const D_SHL : Int = 1 << (D - 1)
 
-///| Polynomial structure containing an array of coefficients.
-/// 包含系数数组的多项式结构。
+///|
+/// Polynomial structure containing an array of coefficients for cryptographic
+/// operations.
+///
+/// This structure represents a polynomial in the ring Z\_q\[X]/(X^N + 1) used
+/// in lattice-based cryptography, specifically in the Dilithium digital
+/// signature scheme. The polynomial has exactly N coefficients, where N is a
+/// compile-time constant representing the degree of the polynomial ring.
+///
+/// Fields:
+///
+/// * `coeffs` : Array of N integer coefficients representing the polynomial
+///   terms from degree 0 to N-1.
+///
+/// Example:
+///
+/// ```moonbit
+/// let p = @ruifeng/moondsa.Poly::new()
+/// p.coeffs[0] = 42  // Set constant term
+/// p.coeffs[1] = -17 // Set coefficient of x^1
+/// inspect(p.coeffs[0], content="42")
+/// inspect(p.coeffs[1], content="-17")
+/// ```
+///
 pub struct Poly {
   coeffs : Array[Int] // Coefficient array / 系数数组
 } derive(Show)
@@ -13,13 +68,35 @@ impl Default for Poly with default() -> Poly {
   { coeffs: Array::make(N, 0) }
 }
 
-///| Create a new polynomial with all zero coefficients.
-/// 创建一个所有系数为零的新多项式。
+///|
+/// Creates a new polynomial with all coefficients initialized to zero.
+///
+/// Returns a new `Poly` instance with all coefficients set to zero.
 pub fn Poly::new() -> Poly {
   Poly::default()
 }
 
 ///|
+/// Creates a copy of the polynomial with independent coefficient storage.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial to copy.
+///
+/// Returns a new polynomial with the same coefficients as the original, but
+/// with independent storage that can be modified without affecting the original
+/// polynomial.
+///
+/// Example:
+///
+/// ```moonbit
+/// let poly1 = Poly::new()
+/// poly1.coeffs[0] = 42
+/// let poly2 = poly1.copy()
+/// poly2.coeffs[0] = 100
+/// // poly1.coeffs[0] is still 42, poly2.coeffs[0] is 100
+/// ```
+///
 pub fn Poly::copy(self : Poly) -> Poly {
   { coeffs: self.coeffs.copy() }
 }
@@ -36,18 +113,46 @@ pub fn Poly::add(self : Poly, other : Poly) -> Unit {
   }
 }
 
-///| Inplace reduction of all coefficients of polynomial to
-/// representative in [0,2*Q].
-/// 将多项式的所有系数原地约简到 [0,2*Q] 范围内的代表元。
+///|
+/// Performs in-place modular reduction of all polynomial coefficients to their
+/// canonical representatives in the range \[0, 2\*Q].
+///
+/// Parameters:
+///
+/// * `self` : The polynomial whose coefficients will be reduced in-place.
+///
+/// Example:
+///
+/// ```moonbit
+/// let poly = Poly::new()
+/// // ... populate polynomial with coefficients ...
+/// poly.reduce() // All coefficients are now in range [0, 2*Q]
+/// ```
+///
 pub fn Poly::reduce(self : Poly) -> Unit {
   for i in 0..<N {
     self.coeffs[i] = reduce32(self.coeffs[i])
   }
 }
 
-///| For all coefficients of in/out polynomial add Q if
-/// coefficient is negative.
-/// 对于多项式的所有系数，如果系数为负则加上 Q。
+///|
+/// Conditionally adds the modulus `Q` to each coefficient of the polynomial if
+/// the coefficient is negative, ensuring all coefficients are in the range \[0,
+/// 2\*Q).
+///
+/// Parameters:
+///
+/// * `self` : The polynomial whose coefficients will be conditionally adjusted
+///   in place.
+///
+/// Example:
+///
+/// ```moonbit
+/// let poly = Poly::new()
+/// // Assume some coefficients are negative after operations
+/// poly.caddq() // All negative coefficients now have Q added to them
+/// ```
+///
 pub fn Poly::caddq(self : Poly) -> Unit {
   for i in 0..<N {
     self.coeffs[i] = caddq(self.coeffs[i])
@@ -78,9 +183,22 @@ pub fn Poly::shiftl(self : Poly) -> Unit {
   }
 }
 
-///| Inplace forward NTT. Output coefficients can be up to
-/// 16*Q larger than input coefficients.
-/// 原地正向 NTT。输出系数可能比输入系数大至多 16*Q。
+///|
+/// Performs an in-place forward Number Theoretic Transform (NTT) on the
+/// polynomial coefficients.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial whose coefficients will be transformed in place.
+///
+/// Example:
+///
+/// ```moonbit
+/// let poly = Poly::new()
+/// // ... initialize polynomial coefficients ...
+/// poly.ntt() // Transform coefficients to NTT domain
+/// ```
+///
 pub fn Poly::ntt(self : Poly) -> Unit {
   ntt(self.coeffs)
 }
@@ -259,10 +377,36 @@ pub fn rej_uniform(
 }
 
 ///|
+/// Defines the number of 128-byte blocks needed to generate sufficient random
+/// bytes for uniform polynomial sampling.
+///
+/// This constant calculates the minimum number of SHAKE128 output blocks
+/// required to ensure that rejection sampling can successfully generate all N
+/// coefficients for a polynomial with high probability. The calculation
+/// accounts for the overhead in rejection sampling where not all random bytes
+/// result in valid coefficients in the range \[0, Q-1].
+///
+/// The value is computed as ⌈768 / STREAM128\_BLOCKBYTES⌉, where 768 bytes
+/// provides enough random material for the rejection sampling algorithm to
+/// succeed with very high probability.
+///
 pub const POLY_UNIFORM_NBLOCKS : UInt = (768 + STREAM128_BLOCKBYTES - 1) /
   STREAM128_BLOCKBYTES
 
 ///|
+/// Samples uniformly random coefficients in \[0, Q-1] for the polynomial using
+/// rejection sampling on a pseudo-random stream.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial to fill with uniform random coefficients.
+/// * `seed` : The seed bytes used to initialize the pseudo-random stream.
+/// * `nonce` : A 16-bit nonce value used along with the seed for stream
+///   initialization.
+///
+/// Panics if the rejection sampling fails to generate enough coefficients after
+/// multiple attempts (this should be extremely unlikely with proper
+/// randomness).
 pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
   let mut buflen = (POLY_UNIFORM_NBLOCKS * STREAM128_BLOCKBYTES).reinterpret_as_int()
   let buf : Array[Byte] = Array::make(buflen + 2, 0)
@@ -283,6 +427,25 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
 }
 
 ///|
+/// Performs rejection sampling on a buffer of random bytes to generate
+/// coefficients in the range \[-eta, eta] for Dilithium polynomial operations.
+///
+/// This function extracts 4-bit values from each byte in the input buffer and
+/// uses rejection sampling to convert them into coefficients within the valid
+/// range based on the eta parameter from the Dilithium context. For eta=2, it
+/// uses modular arithmetic to map values \[0,14] to \[-2,2]. For eta=4, it
+/// directly maps values \[0,8] to \[-4,4].
+///
+/// Parameters:
+///
+/// * `a` : The output array view where accepted coefficients will be stored.
+/// * `len` : The maximum number of coefficients to generate.
+/// * `buf` : The input buffer containing random bytes for sampling.
+/// * `buflen` : The length of the input buffer in bytes.
+///
+/// Returns the number of coefficients successfully generated and stored in the
+/// output array.
+///
 pub fn rej_eta(
   a : ArrayView[Int],
   len : Int,
@@ -324,6 +487,23 @@ pub fn rej_eta(
 }
 
 ///|
+/// Samples uniformly random coefficients in the range \[-η, η] for the
+/// polynomial using rejection sampling on a pseudo-random stream.
+///
+/// This function uses the SHAKE256 extendable-output function to generate
+/// random bytes, then applies rejection sampling to obtain coefficients within
+/// the required range. The number of blocks to generate depends on the η
+/// parameter from the current Dilithium parameter set.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial to fill with uniformly random coefficients in
+///   \[-η, η].
+/// * `seed` : The seed bytes used to initialize the SHAKE256 pseudo-random
+///   stream.
+/// * `nonce` : A 16-bit nonce value used along with the seed for stream
+///   initialization to ensure different outputs for the same seed.
+///
 pub fn poly_uniform_eta(
   self : Poly,
   seed : Array[Byte],
@@ -383,9 +563,37 @@ fn poly_array_to_bytes(poly_array : Array[Int]) -> Array[Byte] {
   bytes_array
 }
 
-///| Implementation of H. Samples polynomial with TAU nonzero
-/// coefficients in {-1,1} using the output stream of
-/// SHAKE256(seed).
+///|
+/// Generates a challenge polynomial using the SHAKE256 hash function,
+/// implementing the H function from the Dilithium signature scheme.
+///
+/// This method samples a polynomial with exactly `tau` nonzero coefficients,
+/// each being either -1 or +1. The polynomial is used as part of the
+/// cryptographic challenge in the Dilithium digital signature algorithm. The
+/// sampling process uses rejection sampling on the SHAKE256 output stream to
+/// ensure uniform distribution.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial to be filled with challenge coefficients. All
+///   coefficients will be set to 0 initially, then `tau` positions will be set
+///   to either -1 or +1.
+/// * `seed` : A byte array used as the seed for the SHAKE256 hash function.
+///   This seed determines the challenge polynomial generation.
+///
+/// The method works by:
+///
+/// 1. Initializing all polynomial coefficients to zero
+/// 2. Using SHAKE256 to generate pseudorandom bytes from the seed
+/// 3. Extracting sign bits for the nonzero coefficients
+/// 4. Using rejection sampling to select `tau` distinct positions
+/// 5. Setting the selected positions to -1 or +1 based on the extracted sign
+/// bits
+///
+/// The resulting polynomial will have exactly `tau` nonzero coefficients
+/// distributed uniformly at random positions, with each nonzero coefficient
+/// being either -1 or +1 with equal probability.
+///
 pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
   let tau = dilithium_context.get_params_set().tau
   let mut signs : UInt64 = 0
@@ -422,8 +630,26 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
   }
 }
 
-///| Bit-pack polynomial with coefficients in [-ETA,ETA].
-/// Input coefficients are assumed to lie in [Q-ETA,Q+ETA].
+///|
+/// Encodes a polynomial with coefficients in the range \[-ETA, ETA] into a
+/// compact byte array representation.
+///
+/// This function performs bit-packing to efficiently store polynomial
+/// coefficients that are bounded by the ETA parameter. The packing strategy
+/// depends on the specific ETA value used in the current Dilithium parameter
+/// set. For ETA=2, coefficients are packed using 3 bits each with 8
+/// coefficients packed into 3 bytes. For ETA=4, coefficients are packed using 4
+/// bits each with 2 coefficients packed into 1 byte.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial whose coefficients will be packed. Coefficients
+///   are assumed to lie in the range \[Q-ETA, Q+ETA].
+///
+/// Returns a byte array containing the bit-packed representation of the
+/// polynomial coefficients. The size of the returned array depends on the ETA
+/// parameter from the current Dilithium parameter set.
+///
 pub fn Poly::pack_eta(self : Poly) -> Array[Byte] {
   let eta = dilithium_context.get_params_set().eta
   let polyeta_packedbytes = dilithium_context.get_params_set().polyeta_packedbytes
@@ -453,7 +679,36 @@ pub fn Poly::pack_eta(self : Poly) -> Array[Byte] {
   r
 }
 
-///| Unpack polynomial with coefficients in [-ETA,ETA].
+///|
+/// Unpacks a polynomial with small coefficients from a packed byte
+/// representation.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial to store the unpacked coefficients. Its
+///   coefficients will be modified in place.
+/// * `a` : The packed byte array containing the encoded polynomial
+///   coefficients.
+///
+/// Panics:
+///
+/// * This function will panic if the length of the input byte array `a` doesn't
+///   match the expected size for the current eta parameter.
+///
+/// The unpacking process depends on the eta value from the Dilithium parameter
+/// set:
+///
+/// * For eta = 2: Each group of 3 bytes encodes 8 polynomial coefficients using
+///   3-bit values
+/// * For eta = 4: Each byte encodes 2 polynomial coefficients using 4-bit
+///   values
+///
+/// After extracting the raw values, the function transforms them from the range
+/// \[0, 2\*eta] back to the coefficient range \[-eta, eta] by computing `eta -
+/// extracted_value` for each coefficient.
+///
+/// This function is the inverse operation of `Poly::pack_eta`.
+///
 pub fn Poly::unpack_eta(self : Poly, a : Array[Byte]) -> Unit {
   let eta = dilithium_context.get_params_set().eta
   if eta == 2 {
@@ -491,8 +746,28 @@ pub fn Poly::unpack_eta(self : Poly, a : Array[Byte]) -> Unit {
   }
 }
 
-///| Bit-pack polynomial t1 with coefficients fitting in 10 bits.
-/// Input coefficients are assumed to be standard representatives.
+///|
+/// Bit-packs a polynomial t1 with coefficients that fit within 10 bits into a
+/// compact byte array representation.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial containing coefficients to be packed. Input
+///   coefficients are assumed to be standard representatives fitting within 10
+///   bits.
+///
+/// Returns a byte array containing the bit-packed representation of the
+/// polynomial. The output array has length `N / 4 * 5` bytes, where every group
+/// of 4 coefficients is packed into 5 bytes.
+///
+/// Example:
+///
+/// ```moonbit
+/// let poly = Poly::new()
+/// // Assume poly has been populated with valid coefficients
+/// let packed_bytes = poly.pack_t1()
+/// ```
+///
 pub fn Poly::pack_t1(self : Poly) -> Array[Byte] {
   let r : Array[Byte] = Array::make(N / 4 * 5, 0)
   for i in 0..<(N / 4) {
@@ -508,8 +783,23 @@ pub fn Poly::pack_t1(self : Poly) -> Array[Byte] {
   r
 }
 
-///| Unpack polynomial t1 with 9-bit coefficients.
-/// Output coefficients are standard representatives.
+///|
+/// Unpacks polynomial coefficients from a byte array, where each coefficient is
+/// stored using 10 bits.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial to store the unpacked coefficients in.
+/// * `a` : The byte array containing the packed polynomial coefficients. Must
+///   contain at least `5 * (N / 4)` bytes where every 5 consecutive bytes
+///   encode 4 coefficients.
+///
+/// Panics:
+///
+/// Panics if the byte array `a` does not contain enough bytes for the expected
+/// number of coefficients, or if array bounds are exceeded during the unpacking
+/// process.
+///
 pub fn Poly::unpack_t1(self : Poly, a : Array[Byte]) -> Unit {
   for i in 0..<(N / 4) {
     self.coeffs[4 * i + 0] = (
@@ -531,7 +821,25 @@ pub fn Poly::unpack_t1(self : Poly, a : Array[Byte]) -> Unit {
   }
 }
 
-///| Bit-pack polynomial t0 with coefficients in [-2^{D-1}, 2^{D-1}].
+///|
+/// Serializes polynomial coefficients with values in the range \[-2^{D-1},
+/// 2^{D-1}] into a compact byte array representation.
+///
+/// This function performs bit-packing of polynomial coefficients by first
+/// transforming them to unsigned values using the formula `D_SHL -
+/// coefficient`, where `D_SHL = 2^{D-1}`. The transformed coefficients are then
+/// packed into bytes using a custom bit-packing scheme that processes 8
+/// coefficients at a time and produces 13 bytes of output per group.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial whose coefficients will be packed. Coefficients
+///   must be in the range \[-2^{D-1}, 2^{D-1}].
+///
+/// Returns a byte array containing the bit-packed representation of the
+/// polynomial coefficients. The output size is `N / 8 * 13` bytes, where `N` is
+/// the number of coefficients in the polynomial.
+///
 pub fn Poly::pack_t0(self : Poly) -> Array[Byte] {
   let t = Array::make(8, 0)
   let r : Array[Byte] = Array::make(N / 8 * 13, 0)
@@ -561,8 +869,30 @@ pub fn Poly::pack_t0(self : Poly) -> Array[Byte] {
   r
 }
 
-///| Unpack polynomial t0 with coefficients in ]-2^{D-1}, 2^{D-1}].
-/// Output coefficients lie in ]Q-2^{D-1},Q+2^{D-1}].
+///|
+/// Unpacks polynomial t0 from its byte array representation with coefficients
+/// in the range ]-2^{D-1}, 2^{D-1}].
+///
+/// Performs the inverse operation of `pack_t0`, reconstructing polynomial
+/// coefficients from their
+/// bit-packed byte representation. Each group of 8 coefficients is packed into
+/// 13 bytes using
+/// a complex bit-packing scheme. The function extracts 13-bit values from the
+/// byte array,
+/// masks them to ensure they stay within the valid range, and then transforms
+/// them back to
+/// the signed coefficient representation by subtracting from D\_SHL (2^{D-1}).
+///
+/// Parameters:
+///
+/// * `self` : The polynomial to be modified with the unpacked coefficients.
+/// * `a` : The byte array containing the packed polynomial data. Must have
+///   length N/8 \* 13 bytes.
+///
+/// Panics if the input byte array `a` does not have the expected length of N/8
+/// \* 13 bytes, which would cause an index out of bounds error during
+/// unpacking.
+///
 pub fn Poly::unpack_t0(self : Poly, a : Array[Byte]) -> Unit {
   for i in 0..<(N / 8) {
     self.coeffs[8 * i + 0] = a[13 * i + 0].to_int() |
@@ -644,9 +974,38 @@ pub fn Poly::pack_z(self : Poly) -> Array[Byte] {
   }
 }
 
-///| Unpack polynomial z with coefficients
-/// in [-(GAMMA1 - 1), GAMMA1 - 1].
-/// Output coefficients are standard representatives.
+///|
+/// Unpacks a polynomial from its bit-packed byte array representation,
+/// restoring coefficients in the range \[-(GAMMA1 - 1), GAMMA1 - 1].
+///
+/// This function performs the inverse operation of `pack_z`, decoding a
+/// compressed polynomial representation back into standard coefficient form.
+/// The unpacking process depends on the GAMMA1 parameter from the Dilithium
+/// context, supporting both GAMMA1 = 2^17 (131072) and GAMMA1 = 2^19 (524288)
+/// parameter sets with different bit layouts.
+///
+/// For GAMMA1 = 2^17:
+///
+/// * Uses 18-bit representation per coefficient (mask 0x3FFFF)
+/// * Packs 4 coefficients into 9 bytes (4.5 bytes per coefficient)
+/// * Each group of 4 coefficients requires 72 bits total
+///
+/// For GAMMA1 = 2^19:
+///
+/// * Uses 20-bit representation per coefficient (mask 0xFFFFF)
+/// * Packs 2 coefficients into 5 bytes (2.5 bytes per coefficient)
+/// * Each group of 2 coefficients requires 40 bits total
+///
+/// After bit extraction, coefficients are converted from their packed
+/// representation to standard form by computing GAMMA1 - packed\_value,
+/// ensuring the result lies in the correct range.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial whose coefficients will be modified in place with
+///   the unpacked values.
+/// * `a` : The byte array containing the bit-packed polynomial data.
+///
 pub fn Poly::unpack_z(self : Poly, a : Array[Byte]) -> Unit {
   let gamma1 = dilithium_context.get_params_set().gamma1
   if gamma1 == 1 << 17 {
@@ -689,8 +1048,20 @@ pub fn Poly::unpack_z(self : Poly, a : Array[Byte]) -> Unit {
   }
 }
 
-///| Bit-pack polynomial w1 with coefficients in [0, 15].
-/// Input coefficients are assumed to be standard representatives.
+///|
+/// Bit-packs polynomial w1 coefficients into a compact byte array
+/// representation.
+///
+/// Parameters:
+///
+/// * `self` : The polynomial containing coefficients in the range \[0, 15] that
+///   are assumed to be standard representatives.
+///
+/// Returns a byte array containing the bit-packed representation of the
+/// polynomial coefficients. The size of the returned array depends on the
+/// gamma2 parameter: N/4 \* 3 bytes when gamma2 equals (Q-1)/88, or N/2 bytes
+/// otherwise.
+///
 pub fn Poly::pack_w1(self : Poly) -> Array[Byte] {
   let gamma2 = dilithium_context.get_params_set().gamma2
   if gamma2 == (Q - 1) / 88 {

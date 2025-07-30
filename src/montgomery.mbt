@@ -1,10 +1,32 @@
-// 蒙哥马利模乘，快速计算 c = a * b % Q 
-// R = 2 ^ 32
-// 蒙哥马利约减, reduce(a) = a / R % Q, 将 a 从蒙哥马利域转换到普通域
-// 蒙哥马利乘法, mul(a, b) = a * b / R = reduce(a * b) 
-// a * R % Q, 将 a 从普通域转换到蒙哥马利域
+///|
+/// Montgomery modular arithmetic for efficient computation in Z_q.
+///
+/// This module implements Montgomery modular multiplication and reduction
+/// techniques for efficient arithmetic in the finite field Z_q where q = 8380417.
+/// Montgomery arithmetic provides significant performance improvements for
+/// modular operations by avoiding expensive division operations.
+///
+/// # Montgomery Domain
+///
+/// The Montgomery representation maps integers a to aR mod q where R = 2^32.
+/// This allows efficient modular multiplication using only shifts and additions.
+///
+/// # Implementation Details
+///
+/// - QINV: Modular inverse of q modulo R, satisfying QINV * q ≡ 1 (mod R)
+/// - All operations use 64-bit intermediate results to prevent overflow
+/// - Constant-time implementation to prevent timing attacks
+///
+/// # References
+///
+/// - Montgomery, P. L. "Modular multiplication without trial division" (1985)
+/// - NIST FIPS 204: Module-Lattice-Based Digital Signature Standard
 
 ///|
+/// Modular inverse of Q modulo 2^32, used in Montgomery reduction.
+///
+/// This constant satisfies the equation: QINV * Q ≡ 1 (mod 2^32)
+/// where Q = 8380417. Used for efficient Montgomery modular reduction.
 const QINV : Int = 58728449 // QINV * Q % R = 1
 
 ///| 将 a 从蒙哥马利域转换到普通域

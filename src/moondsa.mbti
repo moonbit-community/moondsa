@@ -114,6 +114,9 @@ fn use_hint(Int, Byte) -> Int
 
 fn verify(Array[Byte], Array[Byte], Array[Byte]) -> Result[Unit, SignError]
 
+// Errors
+type SignError
+
 // Types and methods
 type BigRandom
 fn BigRandom::get_random(Array[Byte], Int) -> @random.Rand
@@ -204,6 +207,7 @@ fn Polyveck::shiftl(Self) -> Unit
 fn Polyveck::sub(Self, Self) -> Unit
 fn Polyveck::uniform_eta(Self, Array[Byte], UInt16) -> Unit
 fn Polyveck::use_hint(Self, Self) -> Unit
+impl Default for Polyveck
 impl Show for Polyveck
 
 pub struct Polyvecl {
@@ -220,6 +224,7 @@ fn Polyvecl::pointwise_poly_montgomery(Self, Poly, Self) -> Unit
 fn Polyvecl::reduce(Self) -> Unit
 fn Polyvecl::uniform_eta(Self, Array[Byte], UInt16) -> Unit
 fn Polyvecl::uniform_gamma1(Self, Array[Byte], UInt16) -> Unit
+impl Default for Polyvecl
 impl Show for Polyvecl
 
 pub(all) enum SecurityLevel {
@@ -227,8 +232,6 @@ pub(all) enum SecurityLevel {
   Dilithium3
   Dilithium5
 }
-
-type SignError
 
 // Type aliases
 

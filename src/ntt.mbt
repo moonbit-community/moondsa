@@ -1,9 +1,37 @@
+///|
+/// Number-theoretic transform (NTT) operations for polynomial multiplication.
+///
+/// This module implements the NTT and its inverse (INTT) for efficient polynomial
+/// multiplication in the ring Z_q[X]/(X^N + 1). The implementation uses the
+/// Montgomery domain for efficient modular arithmetic.
+///
+/// # Mathematical Background
+///
+/// The NTT is a specialized FFT over finite fields that enables O(n log n)
+/// polynomial multiplication. For Dilithium, we use:
+/// - Prime modulus q = 8380417
+/// - Polynomial degree N = 256
+/// - Montgomery reduction for efficient modular arithmetic
+///
+/// # Implementation Details
+///
+/// The implementation uses precomputed twiddle factors and optimized butterfly
+/// operations for the specific parameters used in Dilithium.
+///
+/// # References
+///
+/// - NIST FIPS 204: Module-Lattice-Based Digital Signature Standard
+/// - Montgomery, P. L. "Modular multiplication without trial division" (1985)
+
 ///| Q = 8380417, NTT 的模数，也是多项式环的模数
 
-///| F = (R^2 / N) mod Q = 41978
-/// F is used in INTT to normalize coefficients and maintain Montgomery domain
-/// F 用于 INTT 中归一化系数并保持蒙哥马利域
-/// 其中：R = 2^32 mod Q (蒙哥马利参数), N = 256 (多项式次数)
+///|
+/// Montgomery normalization factor for inverse NTT.
+///
+/// This constant is used to normalize coefficients after the inverse NTT and
+/// maintain the Montgomery domain representation. Computed as:
+/// F = (R² / N) mod Q
+/// where R = 2³² mod Q (Montgomery parameter) and N = 256 (polynomial degree)
 const F : Int64 = 41978 // (R ^ {2} / N) % Q
 
 ///| Twiddle factors for NTT in Montgomery domain

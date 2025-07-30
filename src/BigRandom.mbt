@@ -1,9 +1,34 @@
 ///|
+/// Extended random number generation utilities for cryptographic applications.
+///
+/// This module provides additional random number generation capabilities
+/// beyond the standard MoonBit random interface, specifically designed for
+/// cryptographic applications requiring high-quality randomness.
+///
+/// # Security Considerations
+///
+/// The implementation is designed to support multiple random sources and
+/// provides a cryptographically secure random number generator interface
+/// suitable for key generation and other security-critical operations.
+///
+/// # Usage
+///
+/// This module is primarily used internally by the Dilithium implementation
+/// to provide secure random number generation for key generation and
+/// non-deterministic signing operations.
+
+///|
+/// Type alias for the standard MoonBit random number generator.
 typealias @random.Rand
 
 ///|
+/// Composite random number generator that combines multiple random sources.
+///
+/// This structure allows combining multiple random number generators to
+/// provide enhanced randomness quality and redundancy for cryptographic
+/// applications.
 struct BigRandom {
-  sources : Array[Rand]
+  sources : Array[Rand] // Array of underlying random sources
 }
 
 ///|
