@@ -1,6 +1,6 @@
 {
   "name": "ruifeng/moondsa",
-  "version": "0.1.3",
+  "version": "0.2.1",
   "deps": {
     "moonbitlang/x": "0.4.30"
   },

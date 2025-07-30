@@ -107,11 +107,11 @@ pub fn keypair_gen(
   // t = A·s1 + s2 ∈ R_q^k
   // This is the MLWE instance: (A, t) where t = A·s1 + s2
   let s1hat = s1.copy()
-  s1hat.ntt()  // Convert s1 to NTT domain for efficient multiplication
-  polyvec_matrix_pointwise_montgomery(t1, mat, s1hat)  // t1 = A·s1
+  s1hat.ntt() // Convert s1 to NTT domain for efficient multiplication
+  polyvec_matrix_pointwise_montgomery(t1, mat, s1hat) // t1 = A·s1
   t1.reduce()
-  t1.invntt_tomont()  // Convert back from NTT domain
-  t1.add(s2)  // t1 = A·s1 + s2
+  t1.invntt_tomont() // Convert back from NTT domain
+  t1.add(s2) // t1 = A·s1 + s2
 
   // Step 5: Compress public vector
   // Apply power-of-2 rounding: t = t1·2^D + t0
@@ -239,12 +239,11 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   // Step 3: Prepare matrices for efficient computation
   // Expand ρ into matrix A ∈ R_q^{k×l} (same as key generation)
   Polyvecl::matrix_expand(mat, rho)
-  
-  // Convert secret vectors to NTT domain for efficient multiplication
-  s1.ntt()  // s1 in NTT domain
-  s2.ntt()  // s2 in NTT domain
-  t0.ntt()  // t0 in NTT domain
 
+  // Convert secret vectors to NTT domain for efficient multiplication
+  s1.ntt() // s1 in NTT domain
+  s2.ntt() // s2 in NTT domain
+  t0.ntt() // t0 in NTT domain
   let mut nonce : UInt16 = 0
   let sig : Array[Byte] = Array::make(sign_bytes, 0)
 
@@ -259,10 +258,10 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
     // Step 4b: Compute commitment w = A·y
     // w ∈ R_q^k represents the commitment before challenge
     let z = y.copy()
-    z.ntt()  // Convert y to NTT domain
-    polyvec_matrix_pointwise_montgomery(w1, mat, z)  // w1 = A·y
+    z.ntt() // Convert y to NTT domain
+    polyvec_matrix_pointwise_montgomery(w1, mat, z) // w1 = A·y
     w1.reduce()
-    w1.invntt_tomont()  // Convert back from NTT domain
+    w1.invntt_tomont() // Convert back from NTT domain
 
     // Step 4c: Decompose commitment for compression
     // w = w1·2^D + w0 where w1 are high bits, w0 are low bits
