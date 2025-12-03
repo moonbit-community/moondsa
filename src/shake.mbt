@@ -180,7 +180,7 @@ pub fn store64(x : Array[Byte], u : UInt64) -> Unit {
 /// values follow the official Keccak specification and are critical for the
 /// correctness of the cryptographic hash function implementation.
 ///
-let keccakf_round_constants = [
+let keccakf_round_constants : ReadOnlyArray[UInt64] = [
   0x0000000000000001UL, 0x0000000000008082UL, 0x800000000000808aUL, 0x8000000080008000UL,
   0x000000000000808bUL, 0x0000000080000001UL, 0x8000000080008081UL, 0x8000000000008009UL,
   0x000000000000008aUL, 0x0000000000000088UL, 0x0000000080008009UL, 0x000000008000000aUL,
@@ -189,7 +189,8 @@ let keccakf_round_constants = [
   0x8000000080008081UL, 0x8000000000008080UL, 0x0000000080000001UL, 0x8000000080008008UL,
 ]
 
-///| Keccak-f[1600] permutation function | Keccak-f[1600] 置换函数
+///|
+/// Keccak-f[1600] permutation function | Keccak-f[1600] 置换函数
 /// Applies the complete Keccak permutation to the state
 /// 对状态应用完整的 Keccak 置换
 pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
@@ -430,7 +431,8 @@ pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
   state[24] = asu
 }
 
-///| Incremental absorb for Keccak | Keccak 的增量吸收
+///|
+/// Incremental absorb for Keccak | Keccak 的增量吸收
 /// Processes input data in blocks, updating the state incrementally
 /// 以块为单位处理输入数据，增量更新状态
 fn keccak_absorb(
@@ -514,7 +516,8 @@ fn keccak_finalize(
 /// Returns the updated position within the rate block after extraction.
 ///
 fn keccak_squeeze(
-  out : ArrayView[Byte],
+  out : Array[Byte],
+  out_offset : Int,
   outlen : UInt,
   s : FixedArray[UInt64],
   pos : UInt,
@@ -533,7 +536,7 @@ fn keccak_squeeze(
     while i < r && i < pos + outlen {
       let index = (i >> 3).reinterpret_as_int()
       let offset = (i & 7).reinterpret_as_int()
-      out[idx] = (s[index] >> (8 * offset)).to_byte()
+      out[out_offset + idx] = (s[index] >> (8 * offset)).to_byte()
       idx += 1
       i += 1
     }
@@ -543,7 +546,8 @@ fn keccak_squeeze(
   return pos
 }
 
-///| Non-incremental absorb for Keccak | Keccak 的非增量吸收
+///|
+/// Non-incremental absorb for Keccak | Keccak 的非增量吸收
 /// Initializes state, absorbs all input, and finalizes in one go
 /// 初始化状态，吸收所有输入，并一次性完成
 fn keccak_absorb_once(
@@ -594,7 +598,8 @@ fn keccak_absorb_once(
 /// bytes.
 ///
 fn keccak_squeezeblocks(
-  out : ArrayView[Byte],
+  out : Array[Byte],
+  out_offset : Int,
   nblocks : UInt,
   s : FixedArray[UInt64],
   r : UInt,
@@ -609,7 +614,7 @@ fn keccak_squeezeblocks(
       let arr : Array[Byte] = Array::make(8, 0)
       store64(arr, s[i])
       for j in 0..<8 {
-        out[idx + 8 * i + j] = arr[j]
+        out[out_offset + idx + 8 * i + j] = arr[j]
       }
     }
     idx += r
@@ -699,11 +704,11 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 /// ```
 ///
 pub fn shake128_squeezeblocks(
-  output : ArrayView[Byte],
+  output : Array[Byte],
   nblocks : UInt,
   s : KeccakState,
 ) -> Unit {
-  keccak_squeezeblocks(output, nblocks, s.s, SHAKE128_RATE)
+  keccak_squeezeblocks(output, 0, nblocks, s.s, SHAKE128_RATE)
 }
 
 ///|
@@ -798,11 +803,11 @@ pub fn shake256_finalize(state : KeccakState) -> Unit {
 /// ```
 ///
 pub fn shake256_squeeze(
-  out : ArrayView[Byte],
+  out : Array[Byte],
   outlen : UInt,
   state : KeccakState,
 ) -> Unit {
-  state.pos = keccak_squeeze(out, outlen, state.s, state.pos, SHAKE256_RATE)
+  state.pos = keccak_squeeze(out, 0, outlen, state.s, state.pos, SHAKE256_RATE)
 }
 
 ///|
@@ -859,10 +864,11 @@ pub fn shake256_squeezeblocks(
   nblocks : UInt,
   state : KeccakState,
 ) -> Unit {
-  keccak_squeezeblocks(out, nblocks, state.s, SHAKE256_RATE)
+  keccak_squeezeblocks(out, 0, nblocks, state.s, SHAKE256_RATE)
 }
 
-///| SHAKE256 complete operation | SHAKE256 完整操作
+///|
+/// SHAKE256 complete operation | SHAKE256 完整操作
 /// Performs complete SHAKE256 hash: absorb input and squeeze output
 /// 执行完整的 SHAKE256 哈希：吸收输入并挤压输出
 pub fn shake256(
@@ -875,10 +881,17 @@ pub fn shake256(
   let state = KeccakState::default()
   shake256_absorb_once(state, input, inlen)
   let nblocks = outlen / SHAKE256_RATE
-  shake256_squeezeblocks(output, nblocks, state)
+  keccak_squeezeblocks(output, 0, nblocks, state.s, SHAKE256_RATE)
   outlen -= nblocks * SHAKE256_RATE
   let idx = nblocks * SHAKE256_RATE
-  shake256_squeeze(output[idx.reinterpret_as_int():], outlen, state)
+  state.pos = keccak_squeeze(
+    output,
+    idx.reinterpret_as_int(),
+    outlen,
+    state.s,
+    state.pos,
+    SHAKE256_RATE,
+  )
 }
 
 ///|这里主要定义了一些外部api,同时为将来支持aes做准备
@@ -920,11 +933,18 @@ pub fn stream128_init(
 /// * `state` : The SHAKE128 state to squeeze data from.
 ///
 pub fn stream128_squeezeblocks(
-  out : ArrayView[Byte],
+  out : Array[Byte],
+  out_offset : Int,
   outblocks : UInt64,
   state : KeccakState,
 ) -> Unit {
-  shake128_squeezeblocks(out, outblocks.to_uint(), state)
+  keccak_squeezeblocks(
+    out,
+    out_offset,
+    outblocks.to_uint(),
+    state.s,
+    SHAKE128_RATE,
+  )
 }
 
 ///|
@@ -996,10 +1016,17 @@ pub fn stream256_init(
 /// * `state` : The SHAKE256 stream state to extract blocks from.
 pub fn stream256_squeezeblocks(
   out : Array[Byte],
+  out_offset : Int,
   outblocks : UInt64,
   state : KeccakState,
 ) -> Unit {
-  shake256_squeezeblocks(out, outblocks.to_uint(), state)
+  keccak_squeezeblocks(
+    out,
+    out_offset,
+    outblocks.to_uint(),
+    state.s,
+    SHAKE256_RATE,
+  )
 }
 
 ///|

@@ -225,7 +225,14 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   shake256_absorb(state, tr, SEEDBYTES.reinterpret_as_uint())
   shake256_absorb(state, m, m.length().reinterpret_as_uint())
   shake256_finalize(state)
-  shake256_squeeze(keymu[SEEDBYTES:], CRHBYTES.reinterpret_as_uint(), state)
+  state.pos = keccak_squeeze(
+    keymu,
+    SEEDBYTES,
+    CRHBYTES.reinterpret_as_uint(),
+    state.s,
+    state.pos,
+    SHAKE256_RATE,
+  )
 
   // Step 2: Generate fresh randomness for masking
   // ρ' = H(keymu) - used to sample fresh y for each attempt
@@ -277,7 +284,14 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
     )
     shake256_absorb(state, sig, (k * polyw1_packedbytes).reinterpret_as_uint())
     shake256_finalize(state)
-    shake256_squeeze(sig, SEEDBYTES.reinterpret_as_uint(), state)
+    state.pos = keccak_squeeze(
+      sig,
+      0,
+      SEEDBYTES.reinterpret_as_uint(),
+      state.s,
+      state.pos,
+      SHAKE256_RATE,
+    )
     cp.challenge(sig)
     cp.ntt()
 
@@ -425,7 +439,14 @@ pub fn verify(
   shake256_absorb(state, mu, SEEDBYTES.reinterpret_as_uint())
   shake256_absorb(state, m, m.length().reinterpret_as_uint())
   shake256_finalize(state)
-  shake256_squeeze(mu, CRHBYTES.reinterpret_as_uint(), state)
+  state.pos = keccak_squeeze(
+    mu,
+    0,
+    CRHBYTES.reinterpret_as_uint(),
+    state.s,
+    state.pos,
+    SHAKE256_RATE,
+  )
 
   // Matrix-vector multiplication; compute Az - c2^dt1
   cp.challenge(c)
@@ -451,7 +472,14 @@ pub fn verify(
   shake256_absorb(state, mu, CRHBYTES.reinterpret_as_uint())
   shake256_absorb(state, buf, (k * polyw1_packedbytes).reinterpret_as_uint())
   shake256_finalize(state)
-  shake256_squeeze(c2, SEEDBYTES.reinterpret_as_uint(), state)
+  state.pos = keccak_squeeze(
+    c2,
+    0,
+    SEEDBYTES.reinterpret_as_uint(),
+    state.s,
+    state.pos,
+    SHAKE256_RATE,
+  )
   // Doesn't require constant time equality check
   if c != c2 {
     Err(SignError("verify failed"))
