@@ -180,7 +180,7 @@ pub fn store64(x : Array[Byte], u : UInt64) -> Unit {
 /// values follow the official Keccak specification and are critical for the
 /// correctness of the cryptographic hash function implementation.
 ///
-let keccakf_round_constants = [
+let keccakf_round_constants : ReadOnlyArray[UInt64] = [
   0x0000000000000001UL, 0x0000000000008082UL, 0x800000000000808aUL, 0x8000000080008000UL,
   0x000000000000808bUL, 0x0000000080000001UL, 0x8000000080008081UL, 0x8000000000008009UL,
   0x000000000000008aUL, 0x0000000000000088UL, 0x0000000080008009UL, 0x000000008000000aUL,
@@ -516,7 +516,7 @@ fn keccak_finalize(
 /// Returns the updated position within the rate block after extraction.
 ///
 fn keccak_squeeze(
-  out : ArrayView[Byte],
+  out : MutArrayView[Byte],
   outlen : UInt,
   s : FixedArray[UInt64],
   pos : UInt,
@@ -535,7 +535,7 @@ fn keccak_squeeze(
     while i < r && i < pos + outlen {
       let index = (i >> 3).reinterpret_as_int()
       let offset = (i & 7).reinterpret_as_int()
-      out[idx] = (s[index] >> (8 * offset)).to_byte()
+      out.set(idx, (s[index] >> (8 * offset)).to_byte())
       idx += 1
       i += 1
     }
@@ -584,7 +584,7 @@ fn keccak_absorb_once(
 ///
 /// Parameters:
 ///
-/// * `out` : `ArrayView[Byte]` - The output buffer where extracted blocks will
+/// * `out` : `MutArrayView[Byte]` - The output buffer where extracted blocks will
 ///   be written.
 /// * `nblocks` : `UInt` - The number of complete blocks to extract from the
 ///   state.
@@ -597,7 +597,7 @@ fn keccak_absorb_once(
 /// bytes.
 ///
 fn keccak_squeezeblocks(
-  out : ArrayView[Byte],
+  out : MutArrayView[Byte],
   nblocks : UInt,
   s : FixedArray[UInt64],
   r : UInt,
@@ -612,7 +612,7 @@ fn keccak_squeezeblocks(
       let arr : Array[Byte] = Array::make(8, 0)
       store64(arr, s[i])
       for j in 0..<8 {
-        out[idx + 8 * i + j] = arr[j]
+        out.set(idx + 8 * i + j, arr[j])
       }
     }
     idx += r
@@ -702,7 +702,7 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 /// ```
 ///
 pub fn shake128_squeezeblocks(
-  output : ArrayView[Byte],
+  output : MutArrayView[Byte],
   nblocks : UInt,
   s : KeccakState,
 ) -> Unit {
@@ -797,11 +797,11 @@ pub fn shake256_finalize(state : KeccakState) -> Unit {
 ///
 /// // Squeeze 32 bytes of output
 /// let output : Array[Byte] = Array::make(32, 0)
-/// shake256_squeeze(output[:], 32, state)
+/// shake256_squeeze(output.mut_view(), 32, state)
 /// ```
 ///
 pub fn shake256_squeeze(
-  out : ArrayView[Byte],
+  out : MutArrayView[Byte],
   outlen : UInt,
   state : KeccakState,
 ) -> Unit {
@@ -862,7 +862,7 @@ pub fn shake256_squeezeblocks(
   nblocks : UInt,
   state : KeccakState,
 ) -> Unit {
-  keccak_squeezeblocks(out, nblocks, state.s, SHAKE256_RATE)
+  keccak_squeezeblocks(out.mut_view(), nblocks, state.s, SHAKE256_RATE)
 }
 
 ///|
@@ -882,7 +882,7 @@ pub fn shake256(
   shake256_squeezeblocks(output, nblocks, state)
   outlen -= nblocks * SHAKE256_RATE
   let idx = nblocks * SHAKE256_RATE
-  shake256_squeeze(output[idx.reinterpret_as_int():], outlen, state)
+  shake256_squeeze(output.mut_view(start=idx.reinterpret_as_int()), outlen, state)
 }
 
 ///|这里主要定义了一些外部api,同时为将来支持aes做准备
@@ -924,7 +924,7 @@ pub fn stream128_init(
 /// * `state` : The SHAKE128 state to squeeze data from.
 ///
 pub fn stream128_squeezeblocks(
-  out : ArrayView[Byte],
+  out : MutArrayView[Byte],
   outblocks : UInt64,
   state : KeccakState,
 ) -> Unit {

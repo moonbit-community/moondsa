@@ -12,7 +12,7 @@ priv struct KAT {
 }
 
 ///|
-fn string_view_to_bytes(s : @string.View) -> Array[Byte] {
+fn string_view_to_bytes(s : StringView) -> Array[Byte] {
   let bytes : Array[Byte] = Array::new()
   let char_length = s.char_length()
   if (char_length & 1) != 0 {
@@ -52,13 +52,13 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
   }
   fn extract_value_to_bytes(line : String) -> Array[Byte] {
     let value = line.split("=").last().unwrap().to_string()
-    let bytes = string_view_to_bytes(value.trim_space())
+    let bytes = string_view_to_bytes(value.trim())
     bytes
   }
 
   fn extract_value_to_int(line : String) -> Int {
     let value = line.split("=").last().unwrap().to_string()
-    let int_value = try? @strconv.parse_int(value.trim_space().to_string())
+    let int_value = try? @strconv.parse_int(value.trim().to_string())
     int_value.unwrap()
   }
 
