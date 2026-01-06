@@ -424,7 +424,11 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
   let buf : Array[Byte] = Array::make(buflen + 2, 0)
   let state = KeccakState::default()
   stream128_init(state, seed, nonce)
-  stream128_squeezeblocks(buf.mut_view(), POLY_UNIFORM_NBLOCKS.to_uint64(), state)
+  stream128_squeezeblocks(
+    buf.mut_view(),
+    POLY_UNIFORM_NBLOCKS.to_uint64(),
+    state,
+  )
   let mut cnt = rej_uniform(self.coeffs.mut_view(), N, buf, buflen)
   let mut off = 0
   while cnt.reinterpret_as_uint() < N.reinterpret_as_uint() {
@@ -434,7 +438,8 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
     }
     buflen = STREAM128_BLOCKBYTES.reinterpret_as_int() + off
     stream128_squeezeblocks(buf.mut_view(start=off), 1, state)
-    cnt = cnt + rej_uniform(self.coeffs.mut_view(start=cnt), N - cnt, buf, buflen)
+    cnt = cnt +
+      rej_uniform(self.coeffs.mut_view(start=cnt), N - cnt, buf, buflen)
   }
 }
 

@@ -882,7 +882,11 @@ pub fn shake256(
   shake256_squeezeblocks(output, nblocks, state)
   outlen -= nblocks * SHAKE256_RATE
   let idx = nblocks * SHAKE256_RATE
-  shake256_squeeze(output.mut_view(start=idx.reinterpret_as_int()), outlen, state)
+  shake256_squeeze(
+    output.mut_view(start=idx.reinterpret_as_int()),
+    outlen,
+    state,
+  )
 }
 
 ///|这里主要定义了一些外部api,同时为将来支持aes做准备
