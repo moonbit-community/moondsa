@@ -14,13 +14,14 @@ priv struct KAT {
 ///|
 fn string_view_to_bytes(s : StringView) -> Array[Byte] {
   let bytes : Array[Byte] = Array::new()
-  let char_length = s.char_length()
+  let chars = s.to_array()
+  let char_length = chars.length()
   if (char_length & 1) != 0 {
     abort("String length must be even for hex conversion")
   }
   for i in 0..<(char_length / 2) {
-    let byte : Byte = (hex_char_to_int(s.get_char(i * 2).unwrap()) * 16 +
-    hex_char_to_int(s.get_char(i * 2 + 1).unwrap())).to_byte()
+    let byte : Byte = (hex_char_to_int(chars[i * 2]) * 16 +
+    hex_char_to_int(chars[i * 2 + 1])).to_byte()
     bytes.push(byte)
   }
   bytes
