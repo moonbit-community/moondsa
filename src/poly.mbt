@@ -359,7 +359,8 @@ pub fn Poly::chknorm(self : Poly, b : Int) -> Byte {
 /// 
 /// Returns / 返回: number of coefficients successfully sampled / 成功采样的系数数量
 pub fn rej_uniform(
-  a : ArrayView[Int],
+  a : Array[Int],
+  offset : Int,
   len : Int,
   buf : Array[Byte],
   buflen : Int,
@@ -381,7 +382,7 @@ pub fn rej_uniform(
     // Accept sample if it's in the valid range [0, Q-1]
     // 如果样本在有效范围 [0, Q-1] 内则接受
     if t < Q.reinterpret_as_uint() {
-      a[cnt] = t.reinterpret_as_int()
+      a[offset + cnt] = t.reinterpret_as_int()
       cnt = cnt + 1
     }
   }
@@ -424,8 +425,8 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
   let buf : Array[Byte] = Array::make(buflen + 2, 0)
   let state = KeccakState::default()
   stream128_init(state, seed, nonce)
-  stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS.to_uint64(), state)
-  let mut cnt = rej_uniform(self.coeffs, N, buf, buflen)
+  stream128_squeezeblocks(buf, 0, POLY_UNIFORM_NBLOCKS.to_uint64(), state)
+  let mut cnt = rej_uniform(self.coeffs, 0, N, buf, buflen)
   let mut off = 0
   while cnt.reinterpret_as_uint() < N.reinterpret_as_uint() {
     off = buflen % 3
@@ -433,8 +434,8 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
       buf[i] = buf[buflen - off + i]
     }
     buflen = STREAM128_BLOCKBYTES.reinterpret_as_int() + off
-    stream128_squeezeblocks(buf[off:], 1, state)
-    cnt = cnt + rej_uniform(self.coeffs[cnt:], N - cnt, buf, buflen)
+    stream128_squeezeblocks(buf, off, 1, state)
+    cnt = cnt + rej_uniform(self.coeffs, cnt, N - cnt, buf, buflen)
   }
 }
 
@@ -459,7 +460,8 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
 /// output array.
 ///
 pub fn rej_eta(
-  a : ArrayView[Int],
+  a : Array[Int],
+  offset : Int,
   len : Int,
   buf : Array[Byte],
   buflen : Int,
@@ -476,21 +478,21 @@ pub fn rej_eta(
     if eta == 2 {
       if t0 < 15 {
         t0 = t0 - ((205 * t0) >> 10) * 5
-        a[cnt] = 2 - t0.reinterpret_as_int()
+        a[offset + cnt] = 2 - t0.reinterpret_as_int()
         cnt += 1
       }
       if t1 < 15 && cnt < len {
         t1 = t1 - ((205 * t1) >> 10) * 5
-        a[cnt] = 2 - t1.reinterpret_as_int()
+        a[offset + cnt] = 2 - t1.reinterpret_as_int()
         cnt = cnt + 1
       }
     } else if eta == 4 {
       if t0 < 9 {
-        a[cnt] = 4 - t0.reinterpret_as_int()
+        a[offset + cnt] = 4 - t0.reinterpret_as_int()
         cnt = cnt + 1
       }
       if t1 < 9 && cnt < len {
-        a[cnt] = 4 - t1.reinterpret_as_int()
+        a[offset + cnt] = 4 - t1.reinterpret_as_int()
         cnt = cnt + 1
       }
     }
@@ -531,12 +533,13 @@ pub fn Poly::poly_uniform_eta(
   let buf : Array[Byte] = Array::make(buflen, 0)
   let state = KeccakState::default()
   stream256_init(state, seed, nonce)
-  stream256_squeezeblocks(buf, poly_uniform_eta_nblocks.to_uint64(), state)
-  let mut cnt = rej_eta(self.coeffs, N, buf, buflen)
+  stream256_squeezeblocks(buf, 0, poly_uniform_eta_nblocks.to_uint64(), state)
+  let mut cnt = rej_eta(self.coeffs, 0, N, buf, buflen)
   while cnt < N.reinterpret_as_uint() {
-    stream256_squeezeblocks(buf, 1, state)
+    stream256_squeezeblocks(buf, 0, 1, state)
     cnt += rej_eta(
-      self.coeffs[cnt.reinterpret_as_int():],
+      self.coeffs,
+      cnt.reinterpret_as_int(),
       N - cnt.reinterpret_as_int(),
       buf,
       STREAM256_BLOCKBYTES.reinterpret_as_int(),
@@ -559,7 +562,12 @@ pub fn Poly::uniform_gamma1(
   let buf : Array[Byte] = Array::make(buflen, 0)
   let state = KeccakState::default()
   stream256_init(state, seed, nonce)
-  stream256_squeezeblocks(buf, poly_uniform_gamma1_nblocks.to_uint64(), state)
+  stream256_squeezeblocks(
+    buf,
+    0,
+    poly_uniform_gamma1_nblocks.to_uint64(),
+    state,
+  )
   self.unpack_z(buf)
 }
 
@@ -616,7 +624,7 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
   // The nonce for challenge is not specified, using 0 as a default.
   shake256_absorb(state, seed, SEEDBYTES.reinterpret_as_uint())
   shake256_finalize(state)
-  shake256_squeezeblocks(buf, 1, state)
+  keccak_squeezeblocks(buf, 0, 1, state.s, SHAKE256_RATE)
   for i in 0..<8 {
     signs = signs | (buf[i].to_uint64() << (8 * i))
   }
@@ -628,7 +636,7 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
     let mut b = 0
     while true {
       if pos >= SHAKE256_RATE.reinterpret_as_int() {
-        stream256_squeezeblocks(buf, 1, state)
+        stream256_squeezeblocks(buf, 0, 1, state)
         pos = 0
       }
       b = buf[pos].to_int()

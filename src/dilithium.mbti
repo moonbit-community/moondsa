@@ -73,15 +73,15 @@ fn randombytes(@random.Rand, Int) -> Array[Byte]
 
 fn reduce32(Int) -> Int
 
-fn rej_eta(ArrayView[Int], Int, Array[Byte], Int) -> UInt
+fn rej_eta(Array[Int], Int, Int, Array[Byte], Int) -> UInt
 
-fn rej_uniform(ArrayView[Int], Int, Array[Byte], Int) -> Int
+fn rej_uniform(Array[Int], Int, Int, Array[Byte], Int) -> Int
 
 fn shake128_absorb(KeccakState, Array[Byte], UInt) -> Unit
 
 fn shake128_finalize(KeccakState) -> Unit
 
-fn shake128_squeezeblocks(ArrayView[Byte], UInt, KeccakState) -> Unit
+fn shake128_squeezeblocks(Array[Byte], UInt, KeccakState) -> Unit
 
 fn shake256(output~ : Array[Byte], UInt, input~ : Array[Byte], UInt) -> Unit
 
@@ -91,7 +91,7 @@ fn shake256_absorb_once(KeccakState, Array[Byte], UInt) -> Unit
 
 fn shake256_finalize(KeccakState) -> Unit
 
-fn shake256_squeeze(ArrayView[Byte], UInt, KeccakState) -> Unit
+fn shake256_squeeze(Array[Byte], UInt, KeccakState) -> Unit
 
 fn shake256_squeezeblocks(Array[Byte], UInt, KeccakState) -> Unit
 
@@ -99,11 +99,11 @@ fn store64(Array[Byte], UInt64) -> Unit
 
 fn stream128_init(KeccakState, Array[Byte], UInt16) -> Unit
 
-fn stream128_squeezeblocks(ArrayView[Byte], UInt64, KeccakState) -> Unit
+fn stream128_squeezeblocks(Array[Byte], Int, UInt64, KeccakState) -> Unit
 
 fn stream256_init(KeccakState, Array[Byte], UInt16) -> Unit
 
-fn stream256_squeezeblocks(Array[Byte], UInt64, KeccakState) -> Unit
+fn stream256_squeezeblocks(Array[Byte], Int, UInt64, KeccakState) -> Unit
 
 fn unpack_pk(Array[Byte]) -> (Array[Byte], Polyveck)
 

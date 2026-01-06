@@ -12,7 +12,7 @@ priv struct KAT {
 }
 
 ///|
-fn string_view_to_bytes(s : @string.View) -> Array[Byte] {
+fn string_view_to_bytes(s : StringView) -> Array[Byte] {
   let bytes : Array[Byte] = Array::new()
   let char_length = s.char_length()
   if (char_length & 1) != 0 {
