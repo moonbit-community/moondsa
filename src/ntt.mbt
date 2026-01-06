@@ -34,7 +34,8 @@
 /// where R = 2³² mod Q (Montgomery parameter) and N = 256 (polynomial degree)
 const F : Int64 = 41978 // (R ^ {2} / N) % Q
 
-///| Twiddle factors for NTT in Montgomery domain
+///|
+/// Twiddle factors for NTT in Montgomery domain
 /// NTT 的旋转因子，已转换到蒙哥马利域
 /// 
 /// zetas[i] = r^{bit_reverse(i, 8)} * R mod Q 
@@ -80,7 +81,8 @@ let zetas = [
   -846154, 1976782,
 ]
 
-///| Forward Number Theoretic Transform (NTT)
+///|
+/// Forward Number Theoretic Transform (NTT)
 /// 正向数论变换 (NTT)
 ///
 /// Performs in-place Cooley-Tukey NTT using Montgomery arithmetic.
@@ -122,7 +124,8 @@ pub fn ntt(a : Array[Int]) -> Unit {
   }
 }
 
-///| Inverse Number Theoretic Transform (INTT)
+///|
+/// Inverse Number Theoretic Transform (INTT)
 /// 逆向数论变换 (INTT)
 ///
 /// Performs in-place inverse NTT with Montgomery factor multiplication.

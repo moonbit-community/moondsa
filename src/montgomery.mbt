@@ -29,7 +29,8 @@
 /// where Q = 8380417. Used for efficient Montgomery modular reduction.
 const QINV : Int = 58728449 // QINV * Q % R = 1
 
-///| 将 a 从蒙哥马利域转换到普通域
+///|
+/// 将 a 从蒙哥马利域转换到普通域
 /// return a * R^-1 % Q
 /// 
 pub fn montgomery_reduce(a : Int64) -> Int {
@@ -38,7 +39,8 @@ pub fn montgomery_reduce(a : Int64) -> Int {
   x.to_int()
 }
 
-///| 对于一个有限域元素a, a <= 2 ^ {31} - 2 ^ {22} - 1,
+///|
+/// 对于一个有限域元素a, a <= 2 ^ {31} - 2 ^ {22} - 1,
 /// 计算 r \equiv a (mod Q), 满足 -6283009 <= r <= 6283008
 pub fn reduce32(a : Int) -> Int {
   /// Q = 8380417, 2 ^ {22} = 4194304, 2 ^ {23} = 8388608
@@ -47,7 +49,8 @@ pub fn reduce32(a : Int) -> Int {
   t
 }
 
-///| 如果输入为负数，则加上Q
+///|
+/// 如果输入为负数，则加上Q
 pub fn caddq(a : Int) -> Int {
   a + ((a >> 31) & Q) // a是负数时算术右移31位得到全1
 }

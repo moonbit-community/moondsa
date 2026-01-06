@@ -189,7 +189,8 @@ let keccakf_round_constants = [
   0x8000000080008081UL, 0x8000000000008080UL, 0x0000000080000001UL, 0x8000000080008008UL,
 ]
 
-///| Keccak-f[1600] permutation function | Keccak-f[1600] 置换函数
+///|
+/// Keccak-f[1600] permutation function | Keccak-f[1600] 置换函数
 /// Applies the complete Keccak permutation to the state
 /// 对状态应用完整的 Keccak 置换
 pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
@@ -430,7 +431,8 @@ pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
   state[24] = asu
 }
 
-///| Incremental absorb for Keccak | Keccak 的增量吸收
+///|
+/// Incremental absorb for Keccak | Keccak 的增量吸收
 /// Processes input data in blocks, updating the state incrementally
 /// 以块为单位处理输入数据，增量更新状态
 fn keccak_absorb(
@@ -543,7 +545,8 @@ fn keccak_squeeze(
   return pos
 }
 
-///| Non-incremental absorb for Keccak | Keccak 的非增量吸收
+///|
+/// Non-incremental absorb for Keccak | Keccak 的非增量吸收
 /// Initializes state, absorbs all input, and finalizes in one go
 /// 初始化状态，吸收所有输入，并一次性完成
 fn keccak_absorb_once(
@@ -862,7 +865,8 @@ pub fn shake256_squeezeblocks(
   keccak_squeezeblocks(out, nblocks, state.s, SHAKE256_RATE)
 }
 
-///| SHAKE256 complete operation | SHAKE256 完整操作
+///|
+/// SHAKE256 complete operation | SHAKE256 完整操作
 /// Performs complete SHAKE256 hash: absorb input and squeeze output
 /// 执行完整的 SHAKE256 哈希：吸收输入并挤压输出
 pub fn shake256(

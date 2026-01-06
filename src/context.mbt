@@ -47,7 +47,7 @@ struct DilithiumContext {
   mut random : @random.Rand // Random number generator
 }
 
-///| 
+///|
 fn DilithiumContext::new(
   level : SecurityLevel,
   random : @random.Rand,
@@ -56,7 +56,8 @@ fn DilithiumContext::new(
   { params_set, random }
 }
 
-///| default random is very dangerous, please use your own random source
+///|
+/// default random is very dangerous, please use your own random source
 pub let dilithium_context : DilithiumContext = DilithiumContext::new(
   Dilithium3,
   @random.Rand::new(),
