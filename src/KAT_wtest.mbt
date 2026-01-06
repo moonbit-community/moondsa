@@ -1,4 +1,5 @@
-///| test the Dilithium by KAT files
+///|
+/// test the Dilithium by KAT files
 priv struct KAT {
   id : Int
   seed : Array[Byte]

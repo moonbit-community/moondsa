@@ -19,7 +19,7 @@
 
 ///|
 /// Type alias for the standard MoonBit random number generator.
-typealias @random.Rand
+using @random {type Rand}
 
 ///|
 /// Composite random number generator that combines multiple random sources.
@@ -46,7 +46,8 @@ impl @random.Source for BigRandom with next(self) -> UInt64 {
   res
 }
 
-///| Crate a new BigRandom
+///|
+/// Crate a new BigRandom
 /// the length of the seed must be a multiple of 32(256 bits)
 pub fn BigRandom::get_random(seed : Array[Byte], level : Int) -> Rand {
   if seed.is_empty() || (level & 31) != 0 || level == 0 {

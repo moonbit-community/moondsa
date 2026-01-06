@@ -37,7 +37,8 @@
 /// Example:
 ///
 /// ```moonbit
-/// let result1 = @ruifeng/moondsa.ite(true, 10, 20)  // returns 10
+/// let result1 = @ruifeng/moondsa.ite(true, 10, 20) // returns 10
+///
 /// let result2 = @ruifeng/moondsa.ite(false, 10, 20) // returns 20
 /// ```
 ///

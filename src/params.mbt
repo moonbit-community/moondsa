@@ -158,7 +158,7 @@ pub struct ParameterSet {
 /// dimensions, and byte sizes needed for the specified Dilithium variant.
 fn SecurityLevel::gen_paramset(
   self : SecurityLevel,
-  features~ : Map[String, String] = Map::new(),
+  features? : Map[String, String] = Map::new(),
 ) -> ParameterSet {
   match self {
     SecurityLevel::Dilithium2 =>

@@ -83,7 +83,7 @@ test "kat-Dilithium3 sig" {
   inspect(sig, content=sm.to_string())
 }
 
-///| 
+///|
 ///
 test "kat-Dilithium5 keypair_gen" {
   dilithium_context.set_level(SecurityLevel::Dilithium5)

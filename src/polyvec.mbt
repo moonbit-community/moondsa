@@ -142,7 +142,8 @@ pub impl Default for Polyvecl with default() -> Polyvecl {
   { vec, }
 }
 
-///| Implementation of ExpandA. Generates matrix A with uniformly
+///|
+/// Implementation of ExpandA. Generates matrix A with uniformly
 /// random coefficients a_{i,j} by performing rejection
 /// sampling on the output stream of SHAKE128(rho|j|i)
 pub fn Polyvecl::matrix_expand(
@@ -383,7 +384,8 @@ pub fn Polyvecl::pointwise_poly_montgomery(
   }
 }
 
-///| Pointwise multiply vectors of polynomials of length L, multiply
+///|
+/// Pointwise multiply vectors of polynomials of length L, multiply
 /// resulting vector by 2^{-32} and add (accumulate) polynomials
 /// in it. Input/output vectors are in NTT domain representation.
 /// Input coefficients are assumed to be less than 22*Q. Output
@@ -402,7 +404,8 @@ pub fn Polyvecl::pointwise_acc_montgomery(
   }
 }
 
-///| Check infinity norm of polynomials in vector of length L.
+///|
+/// Check infinity norm of polynomials in vector of length L.
 /// Assumes input coefficients to be standard representatives.
 /// Returns 0 if norm of all polynomials is strictly smaller than B and 1
 /// otherwise.
@@ -500,7 +503,8 @@ pub fn Polyveck::add(w : Polyveck, v : Polyveck) -> Unit {
   }
 }
 
-///| Subtract vectors of polynomials of length K.
+///|
+/// Subtract vectors of polynomials of length K.
 /// Assumes coefficients of polynomials in second input vector
 /// to be less than 2*Q. No modular reduction is performed.
 pub fn Polyveck::sub(w : Polyveck, v : Polyveck) -> Unit {
@@ -510,7 +514,8 @@ pub fn Polyveck::sub(w : Polyveck, v : Polyveck) -> Unit {
   }
 }
 
-///| Multiply vector of polynomials of Length K by 2^D without modular
+///|
+/// Multiply vector of polynomials of Length K by 2^D without modular
 /// reduction. Assumes input coefficients to be less than 2^{32-D}.
 pub fn Polyveck::shiftl(v : Polyveck) -> Unit {
   let k = dilithium_context.get_params_set().k
@@ -586,7 +591,8 @@ pub fn Polyveck::pointwise_poly_montgomery(
   }
 }
 
-///| Check infinity norm of polynomials in vector of length K.
+///|
+/// Check infinity norm of polynomials in vector of length K.
 /// Assumes input coefficients to be standard representatives.
 /// Returns 0 if norm of all polynomials are strictly smaller than B and 1
 /// otherwise.
@@ -600,7 +606,8 @@ pub fn Polyveck::chknorm(v : Polyveck, bound : Int) -> Byte {
   return 0
 }
 
-///| For all coefficients a of polynomials in vector of length K,
+///|
+/// For all coefficients a of polynomials in vector of length K,
 /// compute a0, a1 such that a mod Q = a1*2^D + a0
 /// with -2^{D-1} < a0 <= 2^{D-1}. Assumes coefficients to be
 /// standard representatives.
@@ -611,7 +618,8 @@ pub fn Polyveck::power2round(v1 : Polyveck, v0 : Polyveck) -> Unit {
   }
 }
 
-///| For all coefficients a of polynomials in vector of length K,
+///|
+/// For all coefficients a of polynomials in vector of length K,
 /// compute high and low bits a0, a1 such a mod Q = a1*ALPHA + a0
 /// with -ALPHA/2 < a0 <= ALPHA/2 except a1 = (Q-1)/ALPHA where we
 /// set a1 = 0 and -ALPHA/2 <= a0 = a mod Q - Q < 0.
