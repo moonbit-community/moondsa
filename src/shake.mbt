@@ -516,7 +516,7 @@ fn keccak_finalize(
 /// Returns the updated position within the rate block after extraction.
 ///
 fn keccak_squeeze(
-  out : ArrayView[Byte],
+  out : MutArrayView[Byte],
   outlen : UInt,
   s : FixedArray[UInt64],
   pos : UInt,
@@ -597,7 +597,7 @@ fn keccak_absorb_once(
 /// bytes.
 ///
 fn keccak_squeezeblocks(
-  out : ArrayView[Byte],
+  out : MutArrayView[Byte],
   nblocks : UInt,
   s : FixedArray[UInt64],
   r : UInt,
@@ -702,7 +702,7 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 /// ```
 ///
 pub fn shake128_squeezeblocks(
-  output : ArrayView[Byte],
+  output : MutArrayView[Byte],
   nblocks : UInt,
   s : KeccakState,
 ) -> Unit {
@@ -801,7 +801,7 @@ pub fn shake256_finalize(state : KeccakState) -> Unit {
 /// ```
 ///
 pub fn shake256_squeeze(
-  out : ArrayView[Byte],
+  out : MutArrayView[Byte],
   outlen : UInt,
   state : KeccakState,
 ) -> Unit {
@@ -862,7 +862,7 @@ pub fn shake256_squeezeblocks(
   nblocks : UInt,
   state : KeccakState,
 ) -> Unit {
-  keccak_squeezeblocks(out, nblocks, state.s, SHAKE256_RATE)
+  keccak_squeezeblocks(out.mut_view(), nblocks, state.s, SHAKE256_RATE)
 }
 
 ///|
@@ -882,7 +882,7 @@ pub fn shake256(
   shake256_squeezeblocks(output, nblocks, state)
   outlen -= nblocks * SHAKE256_RATE
   let idx = nblocks * SHAKE256_RATE
-  shake256_squeeze(output[idx.reinterpret_as_int():], outlen, state)
+  shake256_squeeze(output.mut_view(start=idx.reinterpret_as_int()), outlen, state)
 }
 
 ///|这里主要定义了一些外部api,同时为将来支持aes做准备
@@ -924,7 +924,7 @@ pub fn stream128_init(
 /// * `state` : The SHAKE128 state to squeeze data from.
 ///
 pub fn stream128_squeezeblocks(
-  out : ArrayView[Byte],
+  out : MutArrayView[Byte],
   outblocks : UInt64,
   state : KeccakState,
 ) -> Unit {
