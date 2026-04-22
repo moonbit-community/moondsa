@@ -53,7 +53,7 @@
 ///   vector component in the lattice-based operations.
 pub struct Polyveck {
   vec : Array[Poly]
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Creates a deep copy of the polynomial vector.
@@ -107,7 +107,7 @@ pub impl Default for Polyveck with default() -> Polyveck {
 /// multiplication, and various polynomial transformations in the NTT domain.
 pub struct Polyvecl {
   vec : Array[Poly]
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Creates a deep copy of the polynomial vector.

@@ -89,7 +89,7 @@ const NROUNDS : Int = 24
 pub struct KeccakState {
   s : FixedArray[UInt64] // 25-element flattened state array | 25 元素的展平状态数组
   mut pos : UInt // Current position in the rate block | 当前在比特率块中的位置
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Creates a default instance of `KeccakState` with all state elements

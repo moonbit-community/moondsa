@@ -74,14 +74,24 @@ pub fn BigRandom::get_random(seed : Array[Byte], level : Int) -> Rand {
 }
 
 ///|
+fn int_to_be_bytes(value : Int) -> Array[Byte] {
+  [
+    ((value >> 24) & 0xFF).to_byte(),
+    ((value >> 16) & 0xFF).to_byte(),
+    ((value >> 8) & 0xFF).to_byte(),
+    (value & 0xFF).to_byte(),
+  ]
+}
+
+///|
 pub fn randombytes(rand : Rand, n : Int) -> Array[Byte] {
   let res : Array[Byte] = Array::new(capacity=n)
   for i in 0..<(n / 4) {
-    let v = rand.int().to_be_bytes().to_array()
+    let v = int_to_be_bytes(rand.int())
     res.append(v)
   }
   if (n & 3) != 0 {
-    let v = rand.int().to_be_bytes().to_array()[:n & 3].to_array()
+    let v = int_to_be_bytes(rand.int())[:n & 3].to_array()
     res.append(v)
   }
   res
@@ -89,7 +99,7 @@ pub fn randombytes(rand : Rand, n : Int) -> Array[Byte] {
 
 ///|
 test "BigRandom" {
-  let seed = "1234567890".to_bytes().to_array()
+  let seed = @utf8.encode("1234567890").to_array()
   let level = 1024
   let rand = BigRandom::get_random(seed, level)
   let mut str = ""
