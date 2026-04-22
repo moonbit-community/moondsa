@@ -102,7 +102,6 @@ test "kat-Dilithium5 keypair_gen" {
   inspect(_pk2, content=_pk.to_string())
   inspect(_sk2, content=_sk.to_string())
   let (_rho, _key, _tr, _s1, _s2, _t0) = unpack_sk(_sk2)
-
 }
 
 ///|

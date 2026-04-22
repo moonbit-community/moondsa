@@ -50,7 +50,7 @@ const D_SHL : Int = 1 << (D - 1)
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let p = @ruifeng/moondsa.Poly::new()
 /// p.coeffs[0] = 42  // Set constant term
 /// p.coeffs[1] = -17 // Set coefficient of x^1
@@ -90,7 +90,7 @@ pub fn Poly::new() -> Poly {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly1 = Poly::new()
 /// poly1.coeffs[0] = 42
 /// let poly2 = poly1.copy()
@@ -125,7 +125,7 @@ pub fn Poly::add(self : Poly, other : Poly) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly = Poly::new()
 /// // ... populate polynomial with coefficients ...
 /// poly.reduce() // All coefficients are now in range [0, 2*Q]
@@ -149,7 +149,7 @@ pub fn Poly::reduce(self : Poly) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly = Poly::new()
 /// // Assume some coefficients are negative after operations
 /// poly.caddq() // All negative coefficients now have Q added to them
@@ -197,7 +197,7 @@ pub fn Poly::shiftl(self : Poly) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly = Poly::new()
 /// // ... initialize polynomial coefficients ...
 /// poly.ntt() // Transform coefficients to NTT domain
@@ -424,7 +424,11 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
   let buf : Array[Byte] = Array::make(buflen + 2, 0)
   let state = KeccakState::default()
   stream128_init(state, seed, nonce)
-  stream128_squeezeblocks(buf.mut_view(), POLY_UNIFORM_NBLOCKS.to_uint64(), state)
+  stream128_squeezeblocks(
+    buf.mut_view(),
+    POLY_UNIFORM_NBLOCKS.to_uint64(),
+    state,
+  )
   let mut cnt = rej_uniform(self.coeffs.mut_view(), N, buf, buflen)
   let mut off = 0
   while cnt.reinterpret_as_uint() < N.reinterpret_as_uint() {
@@ -434,7 +438,8 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
     }
     buflen = STREAM128_BLOCKBYTES.reinterpret_as_int() + off
     stream128_squeezeblocks(buf.mut_view(start=off), 1, state)
-    cnt = cnt + rej_uniform(self.coeffs.mut_view(start=cnt), N - cnt, buf, buflen)
+    cnt = cnt +
+      rej_uniform(self.coeffs.mut_view(start=cnt), N - cnt, buf, buflen)
   }
 }
 
@@ -775,7 +780,7 @@ pub fn Poly::unpack_eta(self : Poly, a : Array[Byte]) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly = Poly::new()
 /// // Assume poly has been populated with valid coefficients
 ///

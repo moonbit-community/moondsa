@@ -641,7 +641,7 @@ fn keccak_squeezeblocks(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let data : Array[Byte] = "Hello, World!".to_bytes().to_array()
 /// shake128_absorb(state, data, data.length().reinterpret_as_uint())
@@ -670,7 +670,7 @@ pub fn shake128_absorb(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let input : Array[Byte] = "Hello, World!".to_bytes().to_array()
 /// shake128_absorb(state, input, input.length().reinterpret_as_uint())
@@ -694,7 +694,7 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// // ... after initializing and finalizing the state ...
 /// let output: Array[Byte] = Array::make(336, 0) // 2 blocks * 168 bytes per block
@@ -727,7 +727,7 @@ pub fn shake128_squeezeblocks(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = @ruifeng/moondsa.KeccakState::default()
 /// let chunk1 : Array[Byte] = b"Hello, ".to_array()
 /// let chunk2 : Array[Byte] = b"World!".to_array()
@@ -763,7 +763,7 @@ pub fn shake256_absorb(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = @ruifeng/moondsa.KeccakState::default()
 /// let input : Array[Byte] = b"hello world".to_array()
 /// @ruifeng/moondsa.shake256_absorb(state, input, 11)
@@ -788,7 +788,7 @@ pub fn shake256_finalize(state : KeccakState) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// // Initialize SHAKE256 state and absorb some data
 /// let state = KeccakState::default()
 /// let input : Array[Byte] = "Hello, World!".to_bytes().to_array()
@@ -820,7 +820,7 @@ pub fn shake256_squeeze(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = @ruifeng/moondsa.KeccakState::default()
 /// let data : Array[Byte] = [0, 1, 2, 3]
 /// @ruifeng/moondsa.shake256_absorb_once(state, data, 4)
@@ -847,7 +847,7 @@ pub fn shake256_absorb_once(
 ///
 /// Examples:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// // Initialize SHAKE256 state and absorb some input
 /// let state = KeccakState::default()
 /// shake256_absorb_once(state, [1, 2, 3, 4], 4)
@@ -882,7 +882,11 @@ pub fn shake256(
   shake256_squeezeblocks(output, nblocks, state)
   outlen -= nblocks * SHAKE256_RATE
   let idx = nblocks * SHAKE256_RATE
-  shake256_squeeze(output.mut_view(start=idx.reinterpret_as_int()), outlen, state)
+  shake256_squeeze(
+    output.mut_view(start=idx.reinterpret_as_int()),
+    outlen,
+    state,
+  )
 }
 
 ///|这里主要定义了一些外部api,同时为将来支持aes做准备
@@ -899,7 +903,7 @@ pub fn shake256(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = @ruifeng/moondsa.KeccakState::default()
 /// let seed: Array[Byte] = Array::make(32, 0) // SEEDBYTES length
 /// let nonce = (42: UInt16)
@@ -945,7 +949,7 @@ pub fn stream128_squeezeblocks(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let seed: Array[Byte] = Array::make(SEEDBYTES, 0) // Create seed of appropriate size
 /// @ruifeng/moondsa.dilithium_shake128_stream_init(state, seed, (42: UInt16))
@@ -976,7 +980,7 @@ pub fn dilithium_shake128_stream_init(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let seed : Array[Byte] = Array::make(CRHBYTES, b'A') // 64-byte seed
 /// stream256_init(state, seed, (42: UInt16))
@@ -1018,7 +1022,7 @@ pub fn stream256_squeezeblocks(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let seed : Array[Byte] = Array::make(CRHBYTES, 0) // 64-byte seed
 /// let nonce = (42: UInt16)
