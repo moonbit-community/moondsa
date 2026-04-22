@@ -359,7 +359,7 @@ pub fn Poly::chknorm(self : Poly, b : Int) -> Byte {
 /// 
 /// Returns / 返回: number of coefficients successfully sampled / 成功采样的系数数量
 pub fn rej_uniform(
-  a : ArrayView[Int],
+  a : MutArrayView[Int],
   len : Int,
   buf : Array[Byte],
   buflen : Int,
@@ -424,8 +424,8 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
   let buf : Array[Byte] = Array::make(buflen + 2, 0)
   let state = KeccakState::default()
   stream128_init(state, seed, nonce)
-  stream128_squeezeblocks(buf, POLY_UNIFORM_NBLOCKS.to_uint64(), state)
-  let mut cnt = rej_uniform(self.coeffs, N, buf, buflen)
+  stream128_squeezeblocks(buf.mut_view(), POLY_UNIFORM_NBLOCKS.to_uint64(), state)
+  let mut cnt = rej_uniform(self.coeffs.mut_view(), N, buf, buflen)
   let mut off = 0
   while cnt.reinterpret_as_uint() < N.reinterpret_as_uint() {
     off = buflen % 3
@@ -433,8 +433,8 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
       buf[i] = buf[buflen - off + i]
     }
     buflen = STREAM128_BLOCKBYTES.reinterpret_as_int() + off
-    stream128_squeezeblocks(buf[off:], 1, state)
-    cnt = cnt + rej_uniform(self.coeffs[cnt:], N - cnt, buf, buflen)
+    stream128_squeezeblocks(buf.mut_view(start=off), 1, state)
+    cnt = cnt + rej_uniform(self.coeffs.mut_view(start=cnt), N - cnt, buf, buflen)
   }
 }
 
@@ -459,7 +459,7 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
 /// output array.
 ///
 pub fn rej_eta(
-  a : ArrayView[Int],
+  a : MutArrayView[Int],
   len : Int,
   buf : Array[Byte],
   buflen : Int,
@@ -532,11 +532,11 @@ pub fn Poly::poly_uniform_eta(
   let state = KeccakState::default()
   stream256_init(state, seed, nonce)
   stream256_squeezeblocks(buf, poly_uniform_eta_nblocks.to_uint64(), state)
-  let mut cnt = rej_eta(self.coeffs, N, buf, buflen)
+  let mut cnt = rej_eta(self.coeffs.mut_view(), N, buf, buflen)
   while cnt < N.reinterpret_as_uint() {
     stream256_squeezeblocks(buf, 1, state)
     cnt += rej_eta(
-      self.coeffs[cnt.reinterpret_as_int():],
+      self.coeffs.mut_view(start=cnt.reinterpret_as_int()),
       N - cnt.reinterpret_as_int(),
       buf,
       STREAM256_BLOCKBYTES.reinterpret_as_int(),
