@@ -120,7 +120,6 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
 ///|
 test "load_kat" {
   let _ = load_kat_file(SecurityLevel::Dilithium2)
-
 }
 
 ///|

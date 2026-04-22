@@ -225,7 +225,11 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   shake256_absorb(state, tr, SEEDBYTES.reinterpret_as_uint())
   shake256_absorb(state, m, m.length().reinterpret_as_uint())
   shake256_finalize(state)
-  shake256_squeeze(keymu.mut_view(start=SEEDBYTES), CRHBYTES.reinterpret_as_uint(), state)
+  shake256_squeeze(
+    keymu.mut_view(start=SEEDBYTES),
+    CRHBYTES.reinterpret_as_uint(),
+    state,
+  )
 
   // Step 2: Generate fresh randomness for masking
   // ρ' = H(keymu) - used to sample fresh y for each attempt

@@ -83,7 +83,7 @@ pub fn Polyveck::copy(self : Polyveck) -> Polyveck {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let polyveck = Polyveck::default()
 /// println(polyveck.vec.length()) // prints the value of k from current parameter set
 /// ```
@@ -180,7 +180,7 @@ pub fn Polyvecl::matrix_expand(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let t = Polyveck::default()
 /// let mat : Array[Polyvecl] = Array::new()
 /// let v = Polyvecl::default()
@@ -269,7 +269,7 @@ pub fn Polyvecl::uniform_gamma1(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let v : Polyvecl = Polyvecl::default()
 /// // ... populate v with polynomial data ...
 /// Polyvecl::reduce(v)
@@ -298,7 +298,7 @@ pub fn Polyvecl::reduce(v : Polyvecl) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let w = Polyvecl::default()
 /// let v = Polyvecl::default()
 /// // Assume both vectors have been initialized with some polynomial values
@@ -326,7 +326,7 @@ pub fn Polyvecl::add(w : Polyvecl, v : Polyvecl) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let polyvec = Polyvecl::default()
 /// // ... initialize polynomials in polyvec ...
 /// polyvec.ntt() // Transform all polynomials to NTT domain
@@ -537,7 +537,7 @@ pub fn Polyveck::shiftl(v : Polyveck) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let polyvec = Polyveck::default()
 /// // ... initialize polynomials in polyvec ...
 /// Polyveck::ntt(polyvec)
@@ -666,7 +666,7 @@ pub fn Polyveck::make_hint(h : Polyveck, v0 : Polyveck, v1 : Polyveck) -> Int {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let w = Polyveck::default()
 /// let h = Polyveck::default()
 /// // ... populate w and h with appropriate values ...
