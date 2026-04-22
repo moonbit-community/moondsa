@@ -12,7 +12,7 @@ priv struct KAT {
 }
 
 ///|
-fn string_view_to_bytes(s : @string.View) -> Array[Byte] {
+fn string_view_to_bytes(s : StringView) -> Array[Byte] {
   let bytes : Array[Byte] = Array::new()
   let char_length = s.char_length()
   if (char_length & 1) != 0 {
@@ -30,7 +30,7 @@ fn string_view_to_bytes(s : @string.View) -> Array[Byte] {
 fn load_seed() -> Array[Array[Byte]] {
   let file_path = "kat/SeedBuffer_Dilithium"
   let content = @fs.read_file_to_string(file_path) catch {
-    err => abort(err.to_string())
+    err => abort(@debug.to_repr(err).to_string())
   }
   content
   .split("\n")
@@ -48,23 +48,23 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
   }
   let file_path = "kat/" + file_name
   let content = @fs.read_file_to_string(file_path) catch {
-    err => abort(err.to_string())
+    err => abort(@debug.to_repr(err).to_string())
   }
   fn extract_value_to_bytes(line : String) -> Array[Byte] {
     let value = line.split("=").last().unwrap().to_string()
-    let bytes = string_view_to_bytes(value.trim_space())
+    let bytes = string_view_to_bytes(value.trim())
     bytes
   }
 
   fn extract_value_to_int(line : String) -> Int {
     let value = line.split("=").last().unwrap().to_string()
-    let int_value = try? @strconv.parse_int(value.trim_space().to_string())
+    let int_value = try? @string.parse_int(value.trim())
     int_value.unwrap()
   }
 
   let lines = content
     .split("\n")
-    .filter(line => not(line.is_empty()))
+    .filter(line => !line.is_empty())
     .map(line => line.to_string())
   // count, seed, mlen, msg, pk, sk, smlen, sm
   let count = lines

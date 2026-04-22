@@ -60,7 +60,7 @@ const D_SHL : Int = 1 << (D - 1)
 ///
 pub struct Poly {
   coeffs : Array[Int] // Coefficient array / 系数数组
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Default implementation for Poly - creates a polynomial with all zero coefficients.

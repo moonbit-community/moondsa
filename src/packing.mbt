@@ -40,7 +40,9 @@
 /// This error type is returned when signature verification fails or when
 /// signature/key unpacking encounters invalid data. The error message provides
 /// specific information about what validation failed.
-suberror SignError String
+suberror SignError {
+  SignError(String)
+}
 
 ///|
 /// Serializes a public key into its binary representation by concatenating the
