@@ -1,4 +1,7 @@
 {
-  "import": ["moonbitlang/x/fs"],
+  "import": [
+    "moonbitlang/core/random",
+    "moonbitlang/x/fs"
+  ],
   "warn-list": "-1-2-7"
 }
