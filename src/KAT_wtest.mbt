@@ -65,41 +65,34 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
   let lines = content
     .split("\n")
     .filter(line => !line.is_empty())
+    .to_array()
     .map(line => line.to_owned())
   // count, seed, mlen, msg, pk, sk, smlen, sm
   let count = lines
     .filter(line => line.has_prefix("count"))
     .map(line => line.split("=").last().unwrap().to_owned())
     .map(extract_value_to_int)
-    .collect()
   let seed = lines
     .filter(line => line.has_prefix("seed"))
     .map(extract_value_to_bytes)
-    .collect()
   let mlen = lines
     .filter(line => line.has_prefix("mlen"))
     .map(extract_value_to_int)
-    .collect()
   let msg = lines
     .filter(line => line.has_prefix("msg"))
     .map(extract_value_to_bytes)
-    .collect()
   let pk = lines
     .filter(line => line.has_prefix("pk"))
     .map(extract_value_to_bytes)
-    .collect()
   let sk = lines
     .filter(line => line.has_prefix("sk"))
     .map(extract_value_to_bytes)
-    .collect()
   let smlen = lines
     .filter(line => line.has_prefix("smlen"))
     .map(extract_value_to_int)
-    .collect()
   let sm = lines
     .filter(line => line.has_prefix("sm "))
     .map(extract_value_to_bytes)
-    .collect()
   let kats = []
   for i in 0..<count.length() {
     let kat = {
