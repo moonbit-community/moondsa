@@ -85,11 +85,11 @@ pub fn keypair_gen(
     SEEDBYTES.reinterpret_as_uint(),
   )
   rho.clear()
-  rho.append(seedbuf[0:SEEDBYTES].to_array())
+  rho.append(seedbuf[0:SEEDBYTES].to_owned())
   rhoprime.clear()
-  rhoprime.append(seedbuf[SEEDBYTES:SEEDBYTES + CRHBYTES].to_array())
+  rhoprime.append(seedbuf[SEEDBYTES:SEEDBYTES + CRHBYTES].to_owned())
   key.clear()
-  key.append(seedbuf[SEEDBYTES + CRHBYTES:].to_array())
+  key.append(seedbuf[SEEDBYTES + CRHBYTES:].to_owned())
 
   // Step 2: Construct MLWE instance
   // Expand ρ into matrix A ∈ R_q^{k×l} using SHAKE128
@@ -276,7 +276,7 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
     state.init()
     shake256_absorb(
       state,
-      keymu[SEEDBYTES:].to_array(),
+      keymu[SEEDBYTES:].to_owned(),
       CRHBYTES.reinterpret_as_uint(),
     )
     shake256_absorb(state, sig, (k * polyw1_packedbytes).reinterpret_as_uint())

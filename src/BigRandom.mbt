@@ -63,7 +63,7 @@ pub fn BigRandom::get_random(seed : Array[Byte], level : Int) -> Rand {
     )
     let sources = []
     for i in 0..<(checksum.length() / 32) {
-      let bytes = Bytes::from_array(checksum[i * 32:(i + 1) * 32].to_array())
+      let bytes = Bytes::from_array(checksum[i * 32:(i + 1) * 32].to_owned())
       let random = Rand::chacha8(seed=bytes)
       sources.push(random)
     }
@@ -91,7 +91,7 @@ pub fn randombytes(rand : Rand, n : Int) -> Array[Byte] {
     res.append(v)
   }
   if (n & 3) != 0 {
-    let v = int_to_be_bytes(rand.int())[:n & 3].to_array()
+    let v = int_to_be_bytes(rand.int())[:n & 3].to_owned()
     res.append(v)
   }
   res

@@ -37,7 +37,7 @@ test "test_shake128_empty_16" {
 
   // NIST test vector for SHAKE128("", 16)
   let expected = "7f9c2ba4e88f827d616045507605853e"
-  let actual = bytes_to_hex(output[0:16].to_array())
+  let actual = bytes_to_hex(output[0:16].to_owned())
   inspect(actual, content=expected)
 }
 
@@ -51,7 +51,7 @@ test "test_shake128_moonbit" {
   let output : Array[Byte] = Array::make(168, 0)
   shake128_squeezeblocks(output.mut_view(), 1, state)
   let expected = "677fd5abd26006e8" // First 8 bytes
-  let actual = bytes_to_hex(output[0:8].to_array())
+  let actual = bytes_to_hex(output[0:8].to_owned())
   inspect(actual, content=expected)
 }
 
@@ -77,7 +77,7 @@ test "test_shake256_moonbit" {
   let output : Array[Byte] = Array::make(64, 0)
   shake256(output~, 64, input~, input.length().reinterpret_as_uint())
   let expected = "5d8bf49503d49e78" // First 8 bytes
-  let actual = bytes_to_hex(output[0:8].to_array())
+  let actual = bytes_to_hex(output[0:8].to_owned())
   inspect(actual, content=expected)
 }
 

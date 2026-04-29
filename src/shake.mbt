@@ -564,7 +564,7 @@ fn keccak_absorb_once(
     // Process full blocks | 处理完整块
     for i in 0..<(r / 8) {
       let start = idx + 8 * i
-      s[i] = s[i] ^ load64(input[start:start + 8].to_array())
+      s[i] = s[i] ^ load64(input[start:start + 8].to_owned())
     }
     idx += r
     inlen -= r
