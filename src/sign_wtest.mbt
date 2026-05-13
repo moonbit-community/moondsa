@@ -55,8 +55,8 @@ test "kat-Dilithium3 keypair_gen" {
   // print_bytes(seed)
   let (_pk2, _sk2) = keypair_gen(Ok(seed))
   // rho, (tr, key, t1, t0, s1, s2) wrong
-  inspect(_pk2, content=_pk.to_string())
-  inspect(_sk2, content=_sk.to_string())
+  inspect(@debug.to_string(_pk2), content=@debug.to_string(_pk))
+  inspect(@debug.to_string(_sk2), content=@debug.to_string(_sk))
 }
 
 ///|
@@ -80,7 +80,7 @@ test "kat-Dilithium3 sig" {
   )
   let sign_bytes = dilithium_context.params_set.sign_bytes
   let sm = sm[:sign_bytes].to_owned()
-  inspect(sig, content=sm.to_string())
+  inspect(@debug.to_string(sig), content=@debug.to_string(sm))
 }
 
 ///|
@@ -99,8 +99,8 @@ test "kat-Dilithium5 keypair_gen" {
   // print_bytes(seed)
   let (_pk2, _sk2) = keypair_gen(Ok(seed))
   // rho, (tr, key, t1, t0, s1, s2) wrong
-  inspect(_pk2, content=_pk.to_string())
-  inspect(_sk2, content=_sk.to_string())
+  inspect(@debug.to_string(_pk2), content=@debug.to_string(_pk))
+  inspect(@debug.to_string(_sk2), content=@debug.to_string(_sk))
   let (_rho, _key, _tr, _s1, _s2, _t0) = unpack_sk(_sk2)
 }
 
