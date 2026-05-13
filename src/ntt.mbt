@@ -243,7 +243,7 @@ test "ntt" {
     -5819081, -8499759, 521737, -7231469, -4117257, -5370457, -6235069, 314971,
   ]
   ntt(a)
-  inspect(a, content=a_output.to_string())
+  inspect(@debug.to_string(a), content=@debug.to_string(a_output))
 }
 
 ///|
@@ -311,5 +311,5 @@ test "inv_ntt" {
     804710, -3047027, 3654086, 911638, 3708051,
   ]
   inv_ntt_to_mont(a)
-  inspect(a, content=a_output.to_string())
+  inspect(@debug.to_string(a), content=@debug.to_string(a_output))
 }

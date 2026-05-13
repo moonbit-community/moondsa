@@ -126,8 +126,8 @@ test "kat-keypair" {
     let pk = kat.pk
     let sk = kat.sk
     let (pk2, sk2) = keypair_gen(Ok(seed_buffers[i]))
-    inspect(pk2, content=pk.to_string())
-    inspect(sk2, content=sk.to_string())
+    inspect(@debug.to_string(pk2), content=@debug.to_string(pk))
+    inspect(@debug.to_string(sk2), content=@debug.to_string(sk))
   }
   println("KeyPair Test Level 2: passed")
   let kats = load_kat_file(SecurityLevel::Dilithium3) // Adjust the security level as needed
@@ -137,8 +137,8 @@ test "kat-keypair" {
     let pk = kat.pk
     let sk = kat.sk
     let (pk2, sk2) = keypair_gen(Ok(seed_buffers[i]))
-    inspect(pk2, content=pk.to_string())
-    inspect(sk2, content=sk.to_string())
+    inspect(@debug.to_string(pk2), content=@debug.to_string(pk))
+    inspect(@debug.to_string(sk2), content=@debug.to_string(sk))
   }
   println("KeyPair Test Level 3: passed")
   let kats = load_kat_file(SecurityLevel::Dilithium5) // Adjust the security level as needed
@@ -148,8 +148,8 @@ test "kat-keypair" {
     let pk = kat.pk
     let sk = kat.sk
     let (pk2, sk2) = keypair_gen(Ok(seed_buffers[i]))
-    inspect(pk2, content=pk.to_string())
-    inspect(sk2, content=sk.to_string())
+    inspect(@debug.to_string(pk2), content=@debug.to_string(pk))
+    inspect(@debug.to_string(sk2), content=@debug.to_string(sk))
   }
   println("KeyPair Test Level 5: passed")
 }
@@ -182,7 +182,7 @@ test "kat-sign" {
     let sk = kat.sk
     let sig = sign(msg, sk)
     let sm = kat.sm[:sign_bytes].to_owned()
-    inspect(sig, content=sm.to_string())
+    inspect(@debug.to_string(sig), content=@debug.to_string(sm))
   }
   println("Sign Test Level 2: passed")
   let kats = load_kat_file(SecurityLevel::Dilithium3)
@@ -194,7 +194,7 @@ test "kat-sign" {
     let sk = kat.sk
     let sig = sign(msg, sk)
     let sm = kat.sm[:sign_bytes].to_owned()
-    inspect(sig, content=sm.to_string())
+    inspect(@debug.to_string(sig), content=@debug.to_string(sm))
   }
   println("Sign Test Level 3: passed")
   let kats = load_kat_file(SecurityLevel::Dilithium5)
@@ -206,7 +206,7 @@ test "kat-sign" {
     let sk = kat.sk
     let sig = sign(msg, sk)
     let sm = kat.sm[:sign_bytes].to_owned()
-    inspect(sig, content=sm.to_string())
+    inspect(@debug.to_string(sig), content=@debug.to_string(sm))
   }
   println("Sign Test Level 5: passed")
 }
