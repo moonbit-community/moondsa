@@ -65,7 +65,7 @@ pub struct Poly {
 ///|
 /// Default implementation for Poly - creates a polynomial with all zero coefficients.
 /// Poly 的默认实现 - 创建所有系数为零的多项式。
-impl Default for Poly with default() -> Poly {
+impl Default for Poly with fn default() -> Poly {
   { coeffs: Array::make(N, 0) }
 }
 

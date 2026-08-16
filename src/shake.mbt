@@ -99,7 +99,7 @@ pub struct KeccakState {
 ///
 /// * `s`: A 25-element array of 64-bit unsigned integers, all initialized to 0
 /// * `pos`: Current position set to 0
-pub impl Default for KeccakState with default() {
+pub impl Default for KeccakState with fn default() {
   { s: FixedArray::make(25, 0), pos: 0 }
 }
 

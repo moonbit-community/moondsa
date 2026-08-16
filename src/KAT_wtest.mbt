@@ -30,7 +30,7 @@ fn string_view_to_bytes(s : StringView) -> Array[Byte] {
 fn load_seed() -> Array[Array[Byte]] {
   let file_path = "kat/SeedBuffer_Dilithium"
   let content = @fs.read_file_to_string(file_path) catch {
-    err => abort(@debug.to_repr(err).to_string())
+    err => abort(Repr(err).to_string())
   }
   content
   .split("\n")
@@ -48,7 +48,7 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
   }
   let file_path = "kat/" + file_name
   let content = @fs.read_file_to_string(file_path) catch {
-    err => abort(@debug.to_repr(err).to_string())
+    err => abort(Repr(err).to_string())
   }
   fn extract_value_to_bytes(line : String) -> Array[Byte] {
     let value = line.split("=").last().unwrap().to_owned()
@@ -58,8 +58,9 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
 
   fn extract_value_to_int(line : String) -> Int {
     let value = line.split("=").last().unwrap().to_owned()
-    let int_value = try? @string.parse_int(value.trim())
-    int_value.unwrap()
+    @string.parse_int(value.trim()) catch {
+      err => abort(Repr(err).to_string())
+    }
   }
 
   let lines = content
