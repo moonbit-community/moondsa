@@ -37,7 +37,7 @@ fn BigRandom::new(sources : Array[Rand]) -> BigRandom {
 }
 
 ///|
-impl @random.Source for BigRandom with next(self) -> UInt64 {
+impl @random.Source for BigRandom with fn next(self) -> UInt64 {
   // iteratively get the next random number from the sources
   let mut res = 0UL
   for source in self.sources {

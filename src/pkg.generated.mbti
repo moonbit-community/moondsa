@@ -132,7 +132,9 @@ pub struct KeccakState {
   s : FixedArray[UInt64]
   mut pos : UInt
 } derive(@debug.Debug)
+pub fn KeccakState::default() -> Self
 pub fn KeccakState::init(Self) -> Unit
+pub fn KeccakState::to_repr(Self) -> @debug.Repr
 pub impl Default for KeccakState
 
 pub struct ParameterSet {
@@ -164,6 +166,7 @@ pub fn Poly::challenge(Self, Array[Byte]) -> Unit
 pub fn Poly::chknorm(Self, Int) -> Byte
 pub fn Poly::copy(Self) -> Self
 pub fn Poly::decompose(Self, Self) -> Unit
+pub fn Poly::default() -> Self
 pub fn Poly::inv_ntt_to_mont(Self) -> Unit
 pub fn Poly::make_hint(Self, Self, Self) -> Int
 pub fn Poly::new() -> Self
@@ -179,6 +182,7 @@ pub fn Poly::power2round(Self, Self) -> Unit
 pub fn Poly::reduce(Self) -> Unit
 pub fn Poly::shiftl(Self) -> Unit
 pub fn Poly::sub(Self, Self) -> Unit
+pub fn Poly::to_repr(Self) -> @debug.Repr
 pub fn Poly::uniform(Self, Array[Byte], UInt16) -> Unit
 pub fn Poly::uniform_gamma1(Self, Array[Byte], UInt16) -> Unit
 pub fn Poly::unpack_eta(Self, Array[Byte]) -> Unit
@@ -195,6 +199,7 @@ pub fn Polyveck::caddq(Self) -> Unit
 pub fn Polyveck::chknorm(Self, Int) -> Byte
 pub fn Polyveck::copy(Self) -> Self
 pub fn Polyveck::decompose(Self, Self) -> Unit
+pub fn Polyveck::default() -> Self
 pub fn Polyveck::invntt_tomont(Self) -> Unit
 pub fn Polyveck::make_hint(Self, Self, Self) -> Int
 pub fn Polyveck::ntt(Self) -> Unit
@@ -204,6 +209,7 @@ pub fn Polyveck::power2round(Self, Self) -> Unit
 pub fn Polyveck::reduce(Self) -> Unit
 pub fn Polyveck::shiftl(Self) -> Unit
 pub fn Polyveck::sub(Self, Self) -> Unit
+pub fn Polyveck::to_repr(Self) -> @debug.Repr
 pub fn Polyveck::uniform_eta(Self, Array[Byte], UInt16) -> Unit
 pub fn Polyveck::use_hint(Self, Self) -> Unit
 pub impl Default for Polyveck
@@ -214,12 +220,14 @@ pub struct Polyvecl {
 pub fn Polyvecl::add(Self, Self) -> Unit
 pub fn Polyvecl::chknorm(Self, Int) -> Byte
 pub fn Polyvecl::copy(Self) -> Self
+pub fn Polyvecl::default() -> Self
 pub fn Polyvecl::invntt_tomont(Self) -> Unit
 pub fn Polyvecl::matrix_expand(Array[Self], Array[Byte]) -> Unit
 pub fn Polyvecl::ntt(Self) -> Unit
 pub fn Polyvecl::pointwise_acc_montgomery(Poly, Self, Self) -> Unit
 pub fn Polyvecl::pointwise_poly_montgomery(Self, Poly, Self) -> Unit
 pub fn Polyvecl::reduce(Self) -> Unit
+pub fn Polyvecl::to_repr(Self) -> @debug.Repr
 pub fn Polyvecl::uniform_eta(Self, Array[Byte], UInt16) -> Unit
 pub fn Polyvecl::uniform_gamma1(Self, Array[Byte], UInt16) -> Unit
 pub impl Default for Polyvecl
@@ -233,4 +241,3 @@ pub(all) enum SecurityLevel {
 // Type aliases
 
 // Traits
-

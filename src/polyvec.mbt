@@ -88,7 +88,7 @@ pub fn Polyveck::copy(self : Polyveck) -> Polyveck {
 /// println(polyveck.vec.length()) // prints the value of k from current parameter set
 /// ```
 ///
-pub impl Default for Polyveck with default() -> Polyveck {
+pub impl Default for Polyveck with fn default() -> Polyveck {
   let k = dilithium_context.get_params_set().k
   let vec = Array::new()
   for _i in 0..<k {
@@ -133,7 +133,7 @@ pub fn Polyvecl::copy(self : Polyvecl) -> Polyvecl {
 /// Returns a new `Polyvecl` containing `l` zero-initialized polynomials, where
 /// `l` is obtained from the current Dilithium parameter set.
 ///
-pub impl Default for Polyvecl with default() -> Polyvecl {
+pub impl Default for Polyvecl with fn default() -> Polyvecl {
   let l = dilithium_context.get_params_set().l
   let vec = Array::new()
   for _i in 0..<l {
