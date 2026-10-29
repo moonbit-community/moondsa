@@ -1,25 +1,25 @@
 ///|
-fn hex_char_to_int(c : Char) -> Int {
+fn hex_char_to_int(c : Char) -> Int32 {
   match c {
-    '0'..='9' => c.to_int() - '0'.to_int()
-    'a'..='f' => c.to_int() - 'a'.to_int() + 10
-    'A'..='F' => c.to_int() - 'A'.to_int() + 10
+    '0'..<='9' => c.to_int() - '0'.to_int()
+    'a'..<='f' => c.to_int() - 'a'.to_int() + 10
+    'A'..<='F' => c.to_int() - 'A'.to_int() + 10
     _ => 0
   }
 }
 
 ///|
-fn int_to_hex_char(n : Int) -> String {
+fn int_to_hex_char(n : Int32) -> String {
   match n {
-    0..=9 => (n + '0'.to_int()).unsafe_to_char().to_string()
-    10..=15 => (n - 10 + 'A'.to_int()).unsafe_to_char().to_string()
+    0..<=9 => (n + '0'.to_int()).unsafe_to_char().to_string()
+    10..<=15 => (n - 10 + 'A'.to_int()).unsafe_to_char().to_string()
     _ => ""
   }
 }
 
 ///|
 fn hex_str_to_bytes(str : String) -> Array[Byte] {
-  let bytes : Array[Byte] = Array::new()
+  let bytes : Array[Byte] = Array()
   let chars = str.to_array()
   for i in 0..<(chars.length() / 2) {
     let byte : Byte = (hex_char_to_int(chars[i * 2]) * 16 +

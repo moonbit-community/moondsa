@@ -30,7 +30,7 @@
 /// @ruifeng/moondsa.dilithium_context.set_level(SecurityLevel::Dilithium3)
 /// 
 /// // Configure custom random number generator
-/// let custom_rand = @random.Rand::new()
+/// let custom_rand = @random.Rand()
 /// @ruifeng/moondsa.dilithium_context.set_random(custom_rand)
 /// 
 /// // Get current parameters
@@ -53,14 +53,14 @@ fn DilithiumContext::new(
   random : @random.Rand,
 ) -> DilithiumContext {
   let params_set = level.gen_paramset()
-  { params_set, random }
+  { params_set, random, }
 }
 
 ///|
 /// default random is very dangerous, please use your own random source
 pub let dilithium_context : DilithiumContext = DilithiumContext::new(
   Dilithium3,
-  @random.Rand::new(),
+  @random.Rand(),
 ) // default level
 
 ///|

@@ -49,7 +49,7 @@ const F : Int64 = 41978 // (R ^ {2} / N) % Q
 /// 
 /// Note: zetas[0] is not used in the algorithm, set to R for consistency
 /// 注意：zetas[0] 在算法中未使用，设为 R 以保持一致性
-let zetas : ReadOnlyArray[Int] = [
+let zetas : ReadOnlyArray[Int32] = [
   4193792, 25847, -2608894, -518909, 237124, -777960, -876248, 466468, 1826347, 2353451,
   -359251, -2091905, 3119733, -2884855, 3111497, 2680103, 2725464, 1024112, -1079900,
   3585928, -549488, -1119584, 2619752, -2108549, -2118186, -3859737, -1399561, -3277672,
@@ -97,7 +97,7 @@ let zetas : ReadOnlyArray[Int] = [
 ///
 /// Arguments / 参数:
 /// - a: input/output coefficient array (length 256) / 输入/输出系数数组（长度256）
-pub fn ntt(a : Array[Int]) -> Unit {
+pub fn ntt(a : Array[Int32]) -> Unit {
   let mut k = 0 // Index for twiddle factors / 旋转因子索引
 
   // Iterate through all NTT levels (log2(N) = 8 levels)
@@ -155,7 +155,7 @@ pub fn ntt(a : Array[Int]) -> Unit {
 /// - Output is in standard order / 输出为标准顺序
 /// - Output coefficients < Q in absolute value / 输出系数绝对值 < Q
 /// - Result remains in Montgomery domain / 结果保持在蒙哥马利域中
-pub fn inv_ntt_to_mont(a : Array[Int]) -> Unit {
+pub fn inv_ntt_to_mont(a : Array[Int32]) -> Unit {
   let mut k = 256 // Start from end of twiddle factors array / 从旋转因子数组末尾开始
 
   // Iterate through all INTT levels in reverse order

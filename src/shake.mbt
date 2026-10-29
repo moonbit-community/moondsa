@@ -75,7 +75,7 @@
 /// specifies that exactly 24 rounds of transformation are applied to the
 /// 1600-bit state during each permutation operation, which is essential for
 /// achieving the required security properties of the Keccak algorithm.
-const NROUNDS : Int = 24
+const NROUNDS : Int32 = 24
 
 ///|
 /// Internal state structure for Keccak cryptographic hash functions.
@@ -88,7 +88,7 @@ const NROUNDS : Int = 24
 ///   progress during incremental absorption and squeezing operations.
 pub struct KeccakState {
   s : FixedArray[UInt64] // 25-element flattened state array | 25 元素的展平状态数组
-  mut pos : UInt // Current position in the rate block | 当前在比特率块中的位置
+  mut pos : UInt32 // Current position in the rate block | 当前在比特率块中的位置
 } derive(Debug)
 
 ///|
@@ -100,7 +100,7 @@ pub struct KeccakState {
 /// * `s`: A 25-element array of 64-bit unsigned integers, all initialized to 0
 /// * `pos`: Current position set to 0
 pub impl Default for KeccakState with fn default() {
-  { s: FixedArray::make(25, 0), pos: 0 }
+  { s: FixedArray::make(25, 0), pos: 0, }
 }
 
 ///|
@@ -126,7 +126,7 @@ pub fn KeccakState::init(self : KeccakState) -> Unit {
 ///
 /// Returns the rotated 64-bit unsigned integer where bits that shift beyond the
 /// left edge wrap around to the right edge.
-fn KeccakState::rol(a : UInt64, offset : Int) -> UInt64 {
+fn KeccakState::rol(a : UInt64, offset : Int32) -> UInt64 {
   (a << offset) | (a >> (64 - offset))
 }
 
@@ -437,9 +437,9 @@ pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
 /// 以块为单位处理输入数据，增量更新状态
 fn keccak_absorb(
   state : KeccakState,
-  r : UInt,
+  r : UInt32,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   let mut idx = 0
   let mut pos = state.pos
@@ -485,8 +485,8 @@ fn keccak_absorb(
 /// calculating the final state index.
 fn keccak_finalize(
   s : FixedArray[UInt64],
-  pos : UInt,
-  r : UInt,
+  pos : UInt32,
+  r : UInt32,
   p : Byte,
 ) -> Unit {
   let index = (pos >> 3).reinterpret_as_int()
@@ -517,11 +517,11 @@ fn keccak_finalize(
 ///
 fn keccak_squeeze(
   out : MutArrayView[Byte],
-  outlen : UInt,
+  outlen : UInt32,
   s : FixedArray[UInt64],
-  pos : UInt,
-  r : UInt,
-) -> UInt {
+  pos : UInt32,
+  r : UInt32,
+) -> UInt32 {
   let mut pos = pos
   let mut outlen = outlen
   while outlen != 0 {
@@ -551,9 +551,9 @@ fn keccak_squeeze(
 /// 初始化状态，吸收所有输入，并一次性完成
 fn keccak_absorb_once(
   s : FixedArray[UInt64],
-  r : UInt,
+  r : UInt32,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
   p : Byte,
 ) -> Unit {
   let mut inlen = inlen.reinterpret_as_int()
@@ -598,9 +598,9 @@ fn keccak_absorb_once(
 ///
 fn keccak_squeezeblocks(
   out : MutArrayView[Byte],
-  nblocks : UInt,
+  nblocks : UInt32,
   s : FixedArray[UInt64],
-  r : UInt,
+  r : UInt32,
 ) -> Unit {
   let mut nblocks = nblocks
   let r = r.reinterpret_as_int()
@@ -654,7 +654,7 @@ fn keccak_squeezeblocks(
 pub fn shake128_absorb(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   keccak_absorb(state, SHAKE128_RATE, input, inlen)
 }
@@ -703,7 +703,7 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 ///
 pub fn shake128_squeezeblocks(
   output : MutArrayView[Byte],
-  nblocks : UInt,
+  nblocks : UInt32,
   s : KeccakState,
 ) -> Unit {
   keccak_squeezeblocks(output, nblocks, s.s, SHAKE128_RATE)
@@ -747,7 +747,7 @@ pub fn shake128_squeezeblocks(
 pub fn shake256_absorb(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   keccak_absorb(state, SHAKE256_RATE, input, inlen)
 }
@@ -802,7 +802,7 @@ pub fn shake256_finalize(state : KeccakState) -> Unit {
 ///
 pub fn shake256_squeeze(
   out : MutArrayView[Byte],
-  outlen : UInt,
+  outlen : UInt32,
   state : KeccakState,
 ) -> Unit {
   state.pos = keccak_squeeze(out, outlen, state.s, state.pos, SHAKE256_RATE)
@@ -830,7 +830,7 @@ pub fn shake256_squeeze(
 pub fn shake256_absorb_once(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   keccak_absorb_once(state.s, SHAKE256_RATE, input, inlen, 0x1F)
   state.pos = SHAKE256_RATE
@@ -859,7 +859,7 @@ pub fn shake256_absorb_once(
 ///
 pub fn shake256_squeezeblocks(
   out : Array[Byte],
-  nblocks : UInt,
+  nblocks : UInt32,
   state : KeccakState,
 ) -> Unit {
   keccak_squeezeblocks(out.mut_view(), nblocks, state.s, SHAKE256_RATE)
@@ -871,9 +871,9 @@ pub fn shake256_squeezeblocks(
 /// 执行完整的 SHAKE256 哈希：吸收输入并挤压输出
 pub fn shake256(
   output~ : Array[Byte],
-  outlen : UInt,
+  outlen : UInt32,
   input~ : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   let mut outlen = outlen
   let state = KeccakState::default()

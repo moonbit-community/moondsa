@@ -1,19 +1,19 @@
 ///|
 /// test the Dilithium by KAT files
 priv struct KAT {
-  id : Int
+  id : Int32
   seed : Array[Byte]
-  mlen : Int // message length
+  mlen : Int32 // message length
   msg : Array[Byte]
   pk : Array[Byte]
   sk : Array[Byte]
-  smlen : Int // signature length
+  smlen : Int32 // signature length
   sm : Array[Byte] // signature
 }
 
 ///|
 fn string_view_to_bytes(s : StringView) -> Array[Byte] {
-  let bytes : Array[Byte] = Array::new()
+  let bytes : Array[Byte] = Array()
   let char_length = s.char_length()
   if (char_length & 1) != 0 {
     abort("String length must be even for hex conversion")
@@ -56,7 +56,7 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
     bytes
   }
 
-  fn extract_value_to_int(line : String) -> Int {
+  fn extract_value_to_int(line : String) -> Int32 {
     let value = line.split("=").last().unwrap().to_owned()
     @string.parse_int(value.trim()) catch {
       err => abort(Repr(err).to_string())

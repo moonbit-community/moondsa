@@ -42,7 +42,7 @@
 /// let result2 = @ruifeng/moondsa.ite(false, 10, 20) // returns 20
 /// ```
 ///
-pub fn ite(cond : Bool, a : Int, b : Int) -> Int {
+pub fn ite(cond : Bool, a : Int32, b : Int32) -> Int32 {
   if cond {
     return a
   }

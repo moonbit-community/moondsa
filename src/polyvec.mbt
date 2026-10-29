@@ -67,11 +67,11 @@ pub struct Polyveck {
 /// the original.
 ///
 pub fn Polyveck::copy(self : Polyveck) -> Polyveck {
-  let new_vec = Array::new()
+  let new_vec = Array()
   for poly in self.vec {
     new_vec.push(poly.copy())
   }
-  { vec: new_vec }
+  { vec: new_vec, }
 }
 
 ///|
@@ -90,7 +90,7 @@ pub fn Polyveck::copy(self : Polyveck) -> Polyveck {
 ///
 pub impl Default for Polyveck with fn default() -> Polyveck {
   let k = dilithium_context.get_params_set().k
-  let vec = Array::new()
+  let vec = Array()
   for _i in 0..<k {
     vec.push(Poly::new())
   }
@@ -120,11 +120,11 @@ pub struct Polyvecl {
 /// original, where each polynomial in the vector is also deeply copied.
 ///
 pub fn Polyvecl::copy(self : Polyvecl) -> Polyvecl {
-  let new_vec = Array::new()
+  let new_vec = Array()
   for poly in self.vec {
     new_vec.push(poly.copy())
   }
-  { vec: new_vec }
+  { vec: new_vec, }
 }
 
 ///|
@@ -135,7 +135,7 @@ pub fn Polyvecl::copy(self : Polyvecl) -> Polyvecl {
 ///
 pub impl Default for Polyvecl with fn default() -> Polyvecl {
   let l = dilithium_context.get_params_set().l
-  let vec = Array::new()
+  let vec = Array()
   for _i in 0..<l {
     vec.push(Poly::new())
   }
@@ -182,7 +182,7 @@ pub fn Polyvecl::matrix_expand(
 ///
 /// ```moonbit nocheck
 /// let t = Polyveck::default()
-/// let mat : Array[Polyvecl] = Array::new()
+/// let mat : Array[Polyvecl] = Array()
 /// let v = Polyvecl::default()
 ///
 /// // Initialize matrix with appropriate dimensions
@@ -409,7 +409,7 @@ pub fn Polyvecl::pointwise_acc_montgomery(
 /// Assumes input coefficients to be standard representatives.
 /// Returns 0 if norm of all polynomials is strictly smaller than B and 1
 /// otherwise.
-pub fn Polyvecl::chknorm(v : Polyvecl, bound : Int) -> Byte {
+pub fn Polyvecl::chknorm(v : Polyvecl, bound : Int32) -> Byte {
   let l = dilithium_context.get_params_set().l
   for i in 0..<l {
     if v.vec[i].chknorm(bound) > 0 {
@@ -596,7 +596,7 @@ pub fn Polyveck::pointwise_poly_montgomery(
 /// Assumes input coefficients to be standard representatives.
 /// Returns 0 if norm of all polynomials are strictly smaller than B and 1
 /// otherwise.
-pub fn Polyveck::chknorm(v : Polyveck, bound : Int) -> Byte {
+pub fn Polyveck::chknorm(v : Polyveck, bound : Int32) -> Byte {
   let k = dilithium_context.get_params_set().k
   for i in 0..<k {
     if v.vec[i].chknorm(bound) > 0 {
@@ -646,7 +646,7 @@ pub fn Polyveck::decompose(v1 : Polyveck, v0 : Polyveck) -> Unit {
 /// Returns the total number of 1 bits across all hint polynomials in the
 /// vector.
 ///
-pub fn Polyveck::make_hint(h : Polyveck, v0 : Polyveck, v1 : Polyveck) -> Int {
+pub fn Polyveck::make_hint(h : Polyveck, v0 : Polyveck, v1 : Polyveck) -> Int32 {
   let k = dilithium_context.get_params_set().k
   let mut s = 0
   for i in 0..<k {

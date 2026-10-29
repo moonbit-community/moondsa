@@ -3,7 +3,7 @@ name = "ruifeng/moondsa"
 version = "0.2.1"
 
 import {
-  "moonbitlang/x@0.4.43",
+  "moonbitlang/x@0.5.6",
 }
 
 readme = "README.md"

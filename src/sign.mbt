@@ -64,7 +64,7 @@ pub fn keypair_gen(
   let rho : Array[Byte] = Array::make(SEEDBYTES, 0)
   let rhoprime : Array[Byte] = Array::make(CRHBYTES, 0)
   let key : Array[Byte] = Array::make(SEEDBYTES, 0)
-  let mat : Array[Polyvecl] = Array::new()
+  let mat : Array[Polyvecl] = Array()
   let s1 : Polyvecl = Polyvecl::default()
   let s2 : Polyveck = Polyveck::default()
   let t1 : Polyveck = Polyveck::default()
@@ -203,7 +203,7 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   // μ = H(tr || m) where tr = H(pk) is the public key commitment
   // This binds the signature to both the message and the public key
   let keymu : Array[Byte] = Array::make(SEEDBYTES + CRHBYTES, 0)
-  let mat : Array[Polyvecl] = Array::new()
+  let mat : Array[Polyvecl] = Array()
   let y : Polyvecl = Polyvecl::default()
   let w1 : Polyveck = Polyveck::default()
   let w0 : Polyveck = Polyveck::default()
@@ -379,6 +379,8 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
 /// - Response vector z has coefficients outside bounds - potential key recovery attack
 /// - Reconstructed commitment doesn't match challenge - signature forgery attempt
 /// - Signature components don't satisfy norm constraints - malformed signature
+// Keep the published Result-returning API for existing callers.
+#warnings("-result_error_return")
 pub fn verify(
   sig : Array[Byte],
   m : Array[Byte],
@@ -395,7 +397,7 @@ pub fn verify(
   let mut c : Array[Byte] = Array::make(SEEDBYTES, 0)
   let c2 : Array[Byte] = Array::make(SEEDBYTES, 0)
   let cp = Poly::default()
-  let mat : Array[Polyvecl] = Array::new()
+  let mat : Array[Polyvecl] = Array()
   let mut z = Polyvecl::default()
   let w1 = Polyveck::default()
   let mut h = Polyveck::default()

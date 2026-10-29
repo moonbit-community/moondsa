@@ -27,13 +27,13 @@
 ///
 /// This constant satisfies the equation: QINV * Q ≡ 1 (mod 2^32)
 /// where Q = 8380417. Used for efficient Montgomery modular reduction.
-const QINV : Int = 58728449 // QINV * Q % R = 1
+const QINV : Int32 = 58728449 // QINV * Q % R = 1
 
 ///|
 /// 将 a 从蒙哥马利域转换到普通域
 /// return a * R^-1 % Q
 /// 
-pub fn montgomery_reduce(a : Int64) -> Int {
+pub fn montgomery_reduce(a : Int64) -> Int32 {
   let t : Int64 = (a.to_int() * QINV).to_int64()
   let x = (a - t * Q.to_int64()) >> 32
   x.to_int()
@@ -42,7 +42,7 @@ pub fn montgomery_reduce(a : Int64) -> Int {
 ///|
 /// 对于一个有限域元素a, a <= 2 ^ {31} - 2 ^ {22} - 1,
 /// 计算 r \equiv a (mod Q), 满足 -6283009 <= r <= 6283008
-pub fn reduce32(a : Int) -> Int {
+pub fn reduce32(a : Int32) -> Int32 {
   /// Q = 8380417, 2 ^ {22} = 4194304, 2 ^ {23} = 8388608
   let mut t = (a + (1 << 22)) >> 23 // 近似 a / Q 
   t = a - t * Q
@@ -51,7 +51,7 @@ pub fn reduce32(a : Int) -> Int {
 
 ///|
 /// 如果输入为负数，则加上Q
-pub fn caddq(a : Int) -> Int {
+pub fn caddq(a : Int32) -> Int32 {
   a + ((a >> 31) & Q) // a是负数时算术右移31位得到全1
 }
 
