@@ -37,7 +37,7 @@ fn BigRandom::new(sources : Array[Rand]) -> BigRandom {
 }
 
 ///|
-impl @random.Source for BigRandom with next(self) -> UInt64 {
+impl @random.Source for BigRandom with fn next(self) -> UInt64 {
   // iteratively get the next random number from the sources
   let mut res = 0UL
   for source in self.sources {
@@ -49,11 +49,11 @@ impl @random.Source for BigRandom with next(self) -> UInt64 {
 ///|
 /// Crate a new BigRandom
 /// the length of the seed must be a multiple of 32(256 bits)
-pub fn BigRandom::get_random(seed : Array[Byte], level : Int) -> Rand {
+pub fn BigRandom::get_random(seed : Array[Byte], level : Int32) -> Rand {
   if seed.is_empty() || (level & 31) != 0 || level == 0 {
     panic()
   } else {
-    let checksum : Array[Byte] = Array::new(capacity=level)
+    let checksum : Array[Byte] = Array(capacity=level)
     checksum.resize(level, 0)
     shake256(
       output=checksum,
@@ -68,13 +68,13 @@ pub fn BigRandom::get_random(seed : Array[Byte], level : Int) -> Rand {
       sources.push(random)
     }
     let sourcePool = BigRandom::new(sources)
-    let gen = @random.Rand::new(generator=sourcePool)
+    let gen = @random.Rand(generator=sourcePool)
     gen
   }
 }
 
 ///|
-fn int_to_be_bytes(value : Int) -> Array[Byte] {
+fn int_to_be_bytes(value : Int32) -> Array[Byte] {
   [
     ((value >> 24) & 0xFF).to_byte(),
     ((value >> 16) & 0xFF).to_byte(),
@@ -84,8 +84,8 @@ fn int_to_be_bytes(value : Int) -> Array[Byte] {
 }
 
 ///|
-pub fn randombytes(rand : Rand, n : Int) -> Array[Byte] {
-  let res : Array[Byte] = Array::new(capacity=n)
+pub fn randombytes(rand : Rand, n : Int32) -> Array[Byte] {
+  let res : Array[Byte] = Array(capacity=n)
   for i in 0..<(n / 4) {
     let v = int_to_be_bytes(rand.int())
     res.append(v)

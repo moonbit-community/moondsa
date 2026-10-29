@@ -7,33 +7,33 @@ import {
 }
 
 // Values
-pub const CRHBYTES : Int = 64
+pub const CRHBYTES : Int32 = 64
 
-pub const D : Int = 13
+pub const D : Int32 = 13
 
-pub const N : Int = 256
+pub const N : Int32 = 256
 
-pub const POLYT0_PACKEDBYTES : Int = 416
+pub const POLYT0_PACKEDBYTES : Int32 = 416
 
-pub const POLYT1_PACKEDBYTES : Int = 320
+pub const POLYT1_PACKEDBYTES : Int32 = 320
 
-pub const POLY_UNIFORM_NBLOCKS : UInt = 5
+pub const POLY_UNIFORM_NBLOCKS : UInt32 = 5
 
-pub const Q : Int = 8380417
+pub const Q : Int32 = 8380417
 
-pub const SEEDBYTES : Int = 32
+pub const SEEDBYTES : Int32 = 32
 
-pub const SHAKE128_RATE : UInt = 168
+pub const SHAKE128_RATE : UInt32 = 168
 
-pub const SHAKE256_RATE : UInt = 136
+pub const SHAKE256_RATE : UInt32 = 136
 
-pub const STREAM128_BLOCKBYTES : UInt = 168
+pub const STREAM128_BLOCKBYTES : UInt32 = 168
 
-pub const STREAM256_BLOCKBYTES : UInt = 136
+pub const STREAM256_BLOCKBYTES : UInt32 = 136
 
-pub fn caddq(Int) -> Int
+pub fn caddq(Int32) -> Int32
 
-pub fn decompose(Int) -> (Int, Int)
+pub fn decompose(Int32) -> (Int32, Int32)
 
 pub let dilithium_context : DilithiumContext
 
@@ -41,9 +41,9 @@ pub fn dilithium_shake128_stream_init(KeccakState, Array[Byte], UInt16) -> Unit
 
 pub fn dilithium_shake256_stream_init(KeccakState, Array[Byte], UInt16) -> Unit
 
-pub fn inv_ntt_to_mont(Array[Int]) -> Unit
+pub fn inv_ntt_to_mont(Array[Int32]) -> Unit
 
-pub fn ite(Bool, Int, Int) -> Int
+pub fn ite(Bool, Int32, Int32) -> Int32
 
 pub fn keccakf1600_statepermute(FixedArray[UInt64]) -> Unit
 
@@ -51,11 +51,11 @@ pub fn keypair_gen(Result[Array[Byte], @random.Rand]) -> (Array[Byte], Array[Byt
 
 pub fn load64(Array[Byte]) -> UInt64
 
-pub fn make_hint(Int, Int) -> Byte
+pub fn make_hint(Int32, Int32) -> Byte
 
-pub fn montgomery_reduce(Int64) -> Int
+pub fn montgomery_reduce(Int64) -> Int32
 
-pub fn ntt(Array[Int]) -> Unit
+pub fn ntt(Array[Int32]) -> Unit
 
 pub fn pack_pk(Array[Byte], Polyveck) -> Array[Byte]
 
@@ -65,33 +65,33 @@ pub fn pack_sk(Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyve
 
 pub fn polyvec_matrix_pointwise_montgomery(Polyveck, Array[Polyvecl], Polyvecl) -> Unit
 
-pub fn power2round(Int) -> (Int, Int)
+pub fn power2round(Int32) -> (Int32, Int32)
 
-pub fn randombytes(@random.Rand, Int) -> Array[Byte]
+pub fn randombytes(@random.Rand, Int32) -> Array[Byte]
 
-pub fn reduce32(Int) -> Int
+pub fn reduce32(Int32) -> Int32
 
-pub fn rej_eta(MutArrayView[Int], Int, Array[Byte], Int) -> UInt
+pub fn rej_eta(MutArrayView[Int32], Int32, Array[Byte], Int32) -> UInt32
 
-pub fn rej_uniform(MutArrayView[Int], Int, Array[Byte], Int) -> Int
+pub fn rej_uniform(MutArrayView[Int32], Int32, Array[Byte], Int32) -> Int32
 
-pub fn shake128_absorb(KeccakState, Array[Byte], UInt) -> Unit
+pub fn shake128_absorb(KeccakState, Array[Byte], UInt32) -> Unit
 
 pub fn shake128_finalize(KeccakState) -> Unit
 
-pub fn shake128_squeezeblocks(MutArrayView[Byte], UInt, KeccakState) -> Unit
+pub fn shake128_squeezeblocks(MutArrayView[Byte], UInt32, KeccakState) -> Unit
 
-pub fn shake256(output~ : Array[Byte], UInt, input~ : Array[Byte], UInt) -> Unit
+pub fn shake256(output~ : Array[Byte], UInt32, input~ : Array[Byte], UInt32) -> Unit
 
-pub fn shake256_absorb(KeccakState, Array[Byte], UInt) -> Unit
+pub fn shake256_absorb(KeccakState, Array[Byte], UInt32) -> Unit
 
-pub fn shake256_absorb_once(KeccakState, Array[Byte], UInt) -> Unit
+pub fn shake256_absorb_once(KeccakState, Array[Byte], UInt32) -> Unit
 
 pub fn shake256_finalize(KeccakState) -> Unit
 
-pub fn shake256_squeeze(MutArrayView[Byte], UInt, KeccakState) -> Unit
+pub fn shake256_squeeze(MutArrayView[Byte], UInt32, KeccakState) -> Unit
 
-pub fn shake256_squeezeblocks(Array[Byte], UInt, KeccakState) -> Unit
+pub fn shake256_squeezeblocks(Array[Byte], UInt32, KeccakState) -> Unit
 
 pub fn sign(Array[Byte], Array[Byte]) -> Array[Byte]
 
@@ -111,7 +111,7 @@ pub fn unpack_sig(Array[Byte]) -> Result[(Polyvecl, Polyveck, Array[Byte]), Sign
 
 pub fn unpack_sk(Array[Byte]) -> (Array[Byte], Array[Byte], Array[Byte], Polyveck, Polyvecl, Polyveck)
 
-pub fn use_hint(Int, Byte) -> Int
+pub fn use_hint(Int32, Byte) -> Int32
 
 pub fn verify(Array[Byte], Array[Byte], Array[Byte]) -> Result[Unit, SignError]
 
@@ -120,7 +120,7 @@ type SignError
 
 // Types and methods
 type BigRandom
-pub fn BigRandom::get_random(Array[Byte], Int) -> @random.Rand
+pub fn BigRandom::get_random(Array[Byte], Int32) -> @random.Rand
 
 type DilithiumContext
 pub fn DilithiumContext::get_params_set(Self) -> ParameterSet
@@ -130,42 +130,45 @@ pub fn DilithiumContext::set_random(Self, @random.Rand) -> Unit
 
 pub struct KeccakState {
   s : FixedArray[UInt64]
-  mut pos : UInt
+  mut pos : UInt32
 } derive(@debug.Debug)
+pub fn KeccakState::default() -> Self
 pub fn KeccakState::init(Self) -> Unit
+pub fn KeccakState::to_repr(Self) -> @debug.Repr
 pub impl Default for KeccakState
 
 pub struct ParameterSet {
-  k : Int
-  l : Int
-  eta : Int
-  tau : Int
-  beta : Int
-  gamma1 : Int
-  gamma2 : Int
-  omega : Int
-  publickey_bytes : Int
-  polyeta_packedbytes : Int
-  polyw1_packedbytes : Int
-  polyz_packed_bytes : Int
-  poly_uniform_gamma1_nblocks : UInt
-  polyvech_packed_bytes : Int
-  sign_bytes : Int
+  k : Int32
+  l : Int32
+  eta : Int32
+  tau : Int32
+  beta : Int32
+  gamma1 : Int32
+  gamma2 : Int32
+  omega : Int32
+  publickey_bytes : Int32
+  polyeta_packedbytes : Int32
+  polyw1_packedbytes : Int32
+  polyz_packed_bytes : Int32
+  poly_uniform_gamma1_nblocks : UInt32
+  polyvech_packed_bytes : Int32
+  sign_bytes : Int32
   level : SecurityLevel
   features : Map[String, String]
 }
 
 pub struct Poly {
-  coeffs : Array[Int]
+  coeffs : Array[Int32]
 } derive(@debug.Debug)
 pub fn Poly::add(Self, Self) -> Unit
 pub fn Poly::caddq(Self) -> Unit
 pub fn Poly::challenge(Self, Array[Byte]) -> Unit
-pub fn Poly::chknorm(Self, Int) -> Byte
+pub fn Poly::chknorm(Self, Int32) -> Byte
 pub fn Poly::copy(Self) -> Self
 pub fn Poly::decompose(Self, Self) -> Unit
+pub fn Poly::default() -> Self
 pub fn Poly::inv_ntt_to_mont(Self) -> Unit
-pub fn Poly::make_hint(Self, Self, Self) -> Int
+pub fn Poly::make_hint(Self, Self, Self) -> Int32
 pub fn Poly::new() -> Self
 pub fn Poly::ntt(Self) -> Unit
 pub fn Poly::pack_eta(Self) -> Array[Byte]
@@ -179,6 +182,7 @@ pub fn Poly::power2round(Self, Self) -> Unit
 pub fn Poly::reduce(Self) -> Unit
 pub fn Poly::shiftl(Self) -> Unit
 pub fn Poly::sub(Self, Self) -> Unit
+pub fn Poly::to_repr(Self) -> @debug.Repr
 pub fn Poly::uniform(Self, Array[Byte], UInt16) -> Unit
 pub fn Poly::uniform_gamma1(Self, Array[Byte], UInt16) -> Unit
 pub fn Poly::unpack_eta(Self, Array[Byte]) -> Unit
@@ -192,11 +196,12 @@ pub struct Polyveck {
 } derive(@debug.Debug)
 pub fn Polyveck::add(Self, Self) -> Unit
 pub fn Polyveck::caddq(Self) -> Unit
-pub fn Polyveck::chknorm(Self, Int) -> Byte
+pub fn Polyveck::chknorm(Self, Int32) -> Byte
 pub fn Polyveck::copy(Self) -> Self
 pub fn Polyveck::decompose(Self, Self) -> Unit
+pub fn Polyveck::default() -> Self
 pub fn Polyveck::invntt_tomont(Self) -> Unit
-pub fn Polyveck::make_hint(Self, Self, Self) -> Int
+pub fn Polyveck::make_hint(Self, Self, Self) -> Int32
 pub fn Polyveck::ntt(Self) -> Unit
 pub fn Polyveck::pack_w1(Self, Array[Byte]) -> Unit
 pub fn Polyveck::pointwise_poly_montgomery(Self, Poly, Self) -> Unit
@@ -204,6 +209,7 @@ pub fn Polyveck::power2round(Self, Self) -> Unit
 pub fn Polyveck::reduce(Self) -> Unit
 pub fn Polyveck::shiftl(Self) -> Unit
 pub fn Polyveck::sub(Self, Self) -> Unit
+pub fn Polyveck::to_repr(Self) -> @debug.Repr
 pub fn Polyveck::uniform_eta(Self, Array[Byte], UInt16) -> Unit
 pub fn Polyveck::use_hint(Self, Self) -> Unit
 pub impl Default for Polyveck
@@ -212,14 +218,16 @@ pub struct Polyvecl {
   vec : Array[Poly]
 } derive(@debug.Debug)
 pub fn Polyvecl::add(Self, Self) -> Unit
-pub fn Polyvecl::chknorm(Self, Int) -> Byte
+pub fn Polyvecl::chknorm(Self, Int32) -> Byte
 pub fn Polyvecl::copy(Self) -> Self
+pub fn Polyvecl::default() -> Self
 pub fn Polyvecl::invntt_tomont(Self) -> Unit
 pub fn Polyvecl::matrix_expand(Array[Self], Array[Byte]) -> Unit
 pub fn Polyvecl::ntt(Self) -> Unit
 pub fn Polyvecl::pointwise_acc_montgomery(Poly, Self, Self) -> Unit
 pub fn Polyvecl::pointwise_poly_montgomery(Self, Poly, Self) -> Unit
 pub fn Polyvecl::reduce(Self) -> Unit
+pub fn Polyvecl::to_repr(Self) -> @debug.Repr
 pub fn Polyvecl::uniform_eta(Self, Array[Byte], UInt16) -> Unit
 pub fn Polyvecl::uniform_gamma1(Self, Array[Byte], UInt16) -> Unit
 pub impl Default for Polyvecl
@@ -233,4 +241,3 @@ pub(all) enum SecurityLevel {
 // Type aliases
 
 // Traits
-

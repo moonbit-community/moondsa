@@ -56,7 +56,7 @@ suberror SignError {
 /// Returns a byte array containing the packed public key data.
 pub fn pack_pk(rho : Array[Byte], t1 : Polyveck) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
-  let pk : Array[Byte] = Array::new()
+  let pk : Array[Byte] = Array()
   pk.append(rho)
   for i in 0..<k {
     let t1_packed = t1.vec[i].pack_t1()
@@ -111,7 +111,7 @@ pub fn pack_sk(
 ) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
-  let sk : Array[Byte] = Array::new()
+  let sk : Array[Byte] = Array()
   sk.append(rho)
   sk.append(key)
   sk.append(tr)
@@ -269,6 +269,8 @@ pub fn pack_sig(
 /// * Extra hint indices contain non-zero values (violates strong
 ///   unforgeability)
 /// * Any other signature format validation fails
+// Keep the published Result-returning API for existing callers.
+#warnings("-result_error_return")
 pub fn unpack_sig(
   sig : Array[Byte],
 ) -> Result[(Polyvecl, Polyveck, Array[Byte]), SignError] {
@@ -278,7 +280,7 @@ pub fn unpack_sig(
   let polyz_packed_bytes = dilithium_context.get_params_set().polyz_packed_bytes
   let z = Polyvecl::default()
   let h = Polyveck::default()
-  let c = Array::new()
+  let c = Array()
   let mut idx = 0
   c.append(sig[0:SEEDBYTES].to_owned())
   idx += SEEDBYTES

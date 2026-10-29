@@ -48,7 +48,7 @@
 ///
 /// Returns a tuple `(a0, a1)` where `a0` is the low-order component and `a1` is
 /// the high-order component such that `a = a0 + a1 * 2^D`.
-pub fn power2round(a : Int) -> (Int, Int) {
+pub fn power2round(a : Int32) -> (Int32, Int32) {
   let a1 = (a + (1 << (D - 1)) - 1) >> D
   let a0 = a - (a1 << D)
   (a0, a1)
@@ -70,7 +70,7 @@ pub fn power2round(a : Int) -> (Int, Int) {
 ///
 /// Returns a tuple `(a0, a1)` where `a0` is the low-order component and `a1` is
 /// the high-order component of the decomposition.
-pub fn decompose(a : Int) -> (Int, Int) {
+pub fn decompose(a : Int32) -> (Int32, Int32) {
   let gamma2 = dilithium_context.get_params_set().gamma2
   let mut a1 = (a + 127) >> 7
   let mut a0 = a
@@ -98,7 +98,7 @@ pub fn decompose(a : Int) -> (Int, Int) {
 ///
 /// Returns a hint byte (0 or 1) indicating whether the coefficient requires
 /// adjustment during verification.
-pub fn make_hint(a0 : Int, a1 : Int) -> Byte {
+pub fn make_hint(a0 : Int32, a1 : Int32) -> Byte {
   let gamma2 = dilithium_context.get_params_set().gamma2
   let result = (a0 > gamma2).to_int() |
     (a0 < -gamma2).to_int() |
@@ -118,7 +118,7 @@ pub fn make_hint(a0 : Int, a1 : Int) -> Byte {
 ///
 /// Returns the adjusted high-order bits `a1` after applying the hint-based
 /// correction.
-pub fn use_hint(a : Int, hint : Byte) -> Int {
+pub fn use_hint(a : Int32, hint : Byte) -> Int32 {
   let (a0, a1) = decompose(a)
   let gamma2 = dilithium_context.get_params_set().gamma2
 

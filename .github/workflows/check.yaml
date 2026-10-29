@@ -2,52 +2,48 @@ name: check
 
 on:
   schedule:
-    # Runs at 02:30, only on Friday.
-    # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
     - cron: "30 2 * * 5"
   workflow_dispatch:
   push:
-    branches:
-      - master
-      - main
-      
+    branches: [master, main]
   pull_request:
 
+permissions:
+  contents: read
+
+env:
+  MOON_WORK: "off"
+
 jobs:
-  build:
+  check:
     strategy:
+      fail-fast: false
       matrix:
+        toolchain: [latest]
         os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            toolchain: nightly
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: install-ubuntu
-        if: ${{ matrix.os != 'windows-latest' }}
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
-      - name: install-windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser; irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
-          "C:\Users\runneradmin\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-
-      - name: post install
+      - uses: hustcer/setup-moonbit@develop
+        with:
+          version: ${{ matrix.toolchain }}
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Check
         run: |
           moon version --all
           moon update
-
-      - name: moon check
+          moon check --target all --deny-warn
+      - name: Test debug and release
         run: |
-          moon check --target all
-
-      - name: moon test
+          moon test --target all --deny-warn
+          moon test --target all --release --deny-warn
+      - name: Verify interfaces and formatting
         run: |
-          moon test --target all
-
-      - name: lint
-        run: |
-          moon fmt && git diff --exit-code
-          moon info && git diff --exit-code
-
-
+          moon info --target all
+          moon fmt
+          git diff --exit-code
