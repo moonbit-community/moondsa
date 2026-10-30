@@ -40,7 +40,9 @@
 /// This error type is returned when signature verification fails or when
 /// signature/key unpacking encounters invalid data. The error message provides
 /// specific information about what validation failed.
-suberror SignError String
+suberror SignError {
+  SignError(String)
+}
 
 ///|
 /// Serializes a public key into its binary representation by concatenating the
@@ -54,7 +56,7 @@ suberror SignError String
 /// Returns a byte array containing the packed public key data.
 pub fn pack_pk(rho : Array[Byte], t1 : Polyveck) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
-  let pk : Array[Byte] = Array::new()
+  let pk : Array[Byte] = Array()
   pk.append(rho)
   for i in 0..<k {
     let t1_packed = t1.vec[i].pack_t1()
@@ -74,11 +76,11 @@ pub fn pack_pk(rho : Array[Byte], t1 : Polyveck) -> Array[Byte] {
 /// Returns a tuple containing the seed `rho` and the polynomial vector `t1`.
 pub fn unpack_pk(pk : Array[Byte]) -> (Array[Byte], Polyveck) {
   let k = dilithium_context.get_params_set().k
-  let rho = pk[0:SEEDBYTES].to_array()
+  let rho = pk[0:SEEDBYTES].to_owned()
   let t1 : Polyveck = Polyveck::default()
   for i in 0..<k {
     let t1_packed = pk[SEEDBYTES + i * POLYT1_PACKEDBYTES:SEEDBYTES +
-    (i + 1) * POLYT1_PACKEDBYTES].to_array()
+    (i + 1) * POLYT1_PACKEDBYTES].to_owned()
     t1.vec[i].unpack_t1(t1_packed)
   }
   (rho, t1)
@@ -109,7 +111,7 @@ pub fn pack_sk(
 ) -> Array[Byte] {
   let k = dilithium_context.get_params_set().k
   let l = dilithium_context.get_params_set().l
-  let sk : Array[Byte] = Array::new()
+  let sk : Array[Byte] = Array()
   sk.append(rho)
   sk.append(key)
   sk.append(tr)
@@ -156,30 +158,30 @@ pub fn unpack_sk(
   let l = dilithium_context.get_params_set().l
   let polyeta_packedbytes = dilithium_context.get_params_set().polyeta_packedbytes
   let mut idx = 0
-  let rho = sk[0:SEEDBYTES].to_array()
+  let rho = sk[0:SEEDBYTES].to_owned()
   idx += SEEDBYTES
-  let key = sk[idx:idx + SEEDBYTES].to_array()
+  let key = sk[idx:idx + SEEDBYTES].to_owned()
   idx += SEEDBYTES
-  let tr = sk[idx:idx + SEEDBYTES].to_array()
+  let tr = sk[idx:idx + SEEDBYTES].to_owned()
   idx += SEEDBYTES
   let s1 : Polyvecl = Polyvecl::default()
   for i in 0..<l {
     let packed_eta = sk[idx + i * polyeta_packedbytes:idx +
-    (i + 1) * polyeta_packedbytes].to_array()
+    (i + 1) * polyeta_packedbytes].to_owned()
     s1.vec[i].unpack_eta(packed_eta)
   }
   idx += l * polyeta_packedbytes
   let s2 : Polyveck = Polyveck::default()
   for i in 0..<k {
     let packed_eta = sk[idx + i * polyeta_packedbytes:idx +
-    (i + 1) * polyeta_packedbytes].to_array()
+    (i + 1) * polyeta_packedbytes].to_owned()
     s2.vec[i].unpack_eta(packed_eta)
   }
   idx += k * polyeta_packedbytes
   let t0 : Polyveck = Polyveck::default()
   for i in 0..<k {
     let packed_t0 = sk[idx + i * POLYT0_PACKEDBYTES:idx +
-    (i + 1) * POLYT0_PACKEDBYTES].to_array()
+    (i + 1) * POLYT0_PACKEDBYTES].to_owned()
     t0.vec[i].unpack_t0(packed_t0)
   }
   (rho, key, tr, t0, s1, s2)
@@ -267,6 +269,8 @@ pub fn pack_sig(
 /// * Extra hint indices contain non-zero values (violates strong
 ///   unforgeability)
 /// * Any other signature format validation fails
+// Keep the published Result-returning API for existing callers.
+#warnings("-result_error_return")
 pub fn unpack_sig(
   sig : Array[Byte],
 ) -> Result[(Polyvecl, Polyveck, Array[Byte]), SignError] {
@@ -276,13 +280,13 @@ pub fn unpack_sig(
   let polyz_packed_bytes = dilithium_context.get_params_set().polyz_packed_bytes
   let z = Polyvecl::default()
   let h = Polyveck::default()
-  let c = Array::new()
+  let c = Array()
   let mut idx = 0
-  c.append(sig[0:SEEDBYTES].to_array())
+  c.append(sig[0:SEEDBYTES].to_owned())
   idx += SEEDBYTES
   for i in 0..<l {
     let packed_z = sig[idx + i * polyz_packed_bytes:idx +
-    (i + 1) * polyz_packed_bytes].to_array()
+    (i + 1) * polyz_packed_bytes].to_owned()
     z.vec[i].unpack_z(packed_z)
   }
   idx += l * polyz_packed_bytes

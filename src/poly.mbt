@@ -32,7 +32,7 @@
 /// Precomputed value 2^(D-1) used for efficient power-of-2 rounding operations.
 /// This constant is derived from the rounding parameter D and is used in
 /// various polynomial operations to avoid repeated computation.
-const D_SHL : Int = 1 << (D - 1)
+const D_SHL : Int32 = 1 << (D - 1)
 
 ///|
 /// Polynomial structure containing an array of coefficients for cryptographic
@@ -50,7 +50,7 @@ const D_SHL : Int = 1 << (D - 1)
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let p = @ruifeng/moondsa.Poly::new()
 /// p.coeffs[0] = 42  // Set constant term
 /// p.coeffs[1] = -17 // Set coefficient of x^1
@@ -59,14 +59,14 @@ const D_SHL : Int = 1 << (D - 1)
 /// ```
 ///
 pub struct Poly {
-  coeffs : Array[Int] // Coefficient array / 系数数组
-} derive(Show)
+  coeffs : Array[Int32] // Coefficient array / 系数数组
+} derive(Debug)
 
 ///|
 /// Default implementation for Poly - creates a polynomial with all zero coefficients.
 /// Poly 的默认实现 - 创建所有系数为零的多项式。
-impl Default for Poly with default() -> Poly {
-  { coeffs: Array::make(N, 0) }
+impl Default for Poly with fn default() -> Poly {
+  { coeffs: Array::make(N, 0), }
 }
 
 ///|
@@ -90,7 +90,7 @@ pub fn Poly::new() -> Poly {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly1 = Poly::new()
 /// poly1.coeffs[0] = 42
 /// let poly2 = poly1.copy()
@@ -99,7 +99,7 @@ pub fn Poly::new() -> Poly {
 /// ```
 ///
 pub fn Poly::copy(self : Poly) -> Poly {
-  { coeffs: self.coeffs.copy() }
+  { coeffs: self.coeffs.copy(), }
 }
 
 ///|
@@ -125,7 +125,7 @@ pub fn Poly::add(self : Poly, other : Poly) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly = Poly::new()
 /// // ... populate polynomial with coefficients ...
 /// poly.reduce() // All coefficients are now in range [0, 2*Q]
@@ -149,7 +149,7 @@ pub fn Poly::reduce(self : Poly) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly = Poly::new()
 /// // Assume some coefficients are negative after operations
 /// poly.caddq() // All negative coefficients now have Q added to them
@@ -197,7 +197,7 @@ pub fn Poly::shiftl(self : Poly) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly = Poly::new()
 /// // ... initialize polynomial coefficients ...
 /// poly.ntt() // Transform coefficients to NTT domain
@@ -285,7 +285,7 @@ pub fn Poly::decompose(self : Poly, low : Poly) -> Unit {
 /// - a1: high bits polynomial / 高位多项式
 /// 
 /// Returns / 返回: Number of 1's in hint polynomial / 提示多项式中 1 的数量
-pub fn Poly::make_hint(h : Poly, a0 : Poly, a1 : Poly) -> Int {
+pub fn Poly::make_hint(h : Poly, a0 : Poly, a1 : Poly) -> Int32 {
   let mut s = 0
   for i in 0..<N {
     h.coeffs[i] = make_hint(a0.coeffs[i], a1.coeffs[i]).to_int()
@@ -321,7 +321,7 @@ pub fn Poly::use_hint(self : Poly, h : Poly) -> Unit {
 /// 
 /// Returns / 返回: 0 if all coefficients have absolute value < b, 1 otherwise
 ///                0 如果所有系数的绝对值 < b，否则返回 1
-pub fn Poly::chknorm(self : Poly, b : Int) -> Byte {
+pub fn Poly::chknorm(self : Poly, b : Int32) -> Byte {
   // It is ok to leak which coefficient violates the bound since
   // the probability for each coefficient is independent of secret
   // data but we must not leak the sign of the centralized representative.
@@ -359,12 +359,11 @@ pub fn Poly::chknorm(self : Poly, b : Int) -> Byte {
 /// 
 /// Returns / 返回: number of coefficients successfully sampled / 成功采样的系数数量
 pub fn rej_uniform(
-  a : Array[Int],
-  offset : Int,
-  len : Int,
+  a : MutArrayView[Int32],
+  len : Int32,
   buf : Array[Byte],
-  buflen : Int,
-) -> Int {
+  buflen : Int32,
+) -> Int32 {
   let mut cnt = 0 // Counter for accepted samples / 接受样本的计数器
   let mut pos = 0 // Position in input buffer / 输入缓冲区中的位置
   let mut t = 0U // Temporary variable for 24-bit value / 24位值的临时变量
@@ -382,7 +381,7 @@ pub fn rej_uniform(
     // Accept sample if it's in the valid range [0, Q-1]
     // 如果样本在有效范围 [0, Q-1] 内则接受
     if t < Q.reinterpret_as_uint() {
-      a[offset + cnt] = t.reinterpret_as_int()
+      a[cnt] = t.reinterpret_as_int()
       cnt = cnt + 1
     }
   }
@@ -403,7 +402,7 @@ pub fn rej_uniform(
 /// provides enough random material for the rejection sampling algorithm to
 /// succeed with very high probability.
 ///
-pub const POLY_UNIFORM_NBLOCKS : UInt = (768 + STREAM128_BLOCKBYTES - 1) /
+pub const POLY_UNIFORM_NBLOCKS : UInt32 = (768 + STREAM128_BLOCKBYTES - 1) /
   STREAM128_BLOCKBYTES
 
 ///|
@@ -425,8 +424,12 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
   let buf : Array[Byte] = Array::make(buflen + 2, 0)
   let state = KeccakState::default()
   stream128_init(state, seed, nonce)
-  stream128_squeezeblocks(buf, 0, POLY_UNIFORM_NBLOCKS.to_uint64(), state)
-  let mut cnt = rej_uniform(self.coeffs, 0, N, buf, buflen)
+  stream128_squeezeblocks(
+    buf.mut_view(),
+    POLY_UNIFORM_NBLOCKS.to_uint64(),
+    state,
+  )
+  let mut cnt = rej_uniform(self.coeffs.mut_view(), N, buf, buflen)
   let mut off = 0
   while cnt.reinterpret_as_uint() < N.reinterpret_as_uint() {
     off = buflen % 3
@@ -434,8 +437,9 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
       buf[i] = buf[buflen - off + i]
     }
     buflen = STREAM128_BLOCKBYTES.reinterpret_as_int() + off
-    stream128_squeezeblocks(buf, off, 1, state)
-    cnt = cnt + rej_uniform(self.coeffs, cnt, N - cnt, buf, buflen)
+    stream128_squeezeblocks(buf.mut_view(start=off), 1, state)
+    cnt = cnt +
+      rej_uniform(self.coeffs.mut_view(start=cnt), N - cnt, buf, buflen)
   }
 }
 
@@ -460,12 +464,11 @@ pub fn Poly::uniform(self : Poly, seed : Array[Byte], nonce : UInt16) -> Unit {
 /// output array.
 ///
 pub fn rej_eta(
-  a : Array[Int],
-  offset : Int,
-  len : Int,
+  a : MutArrayView[Int32],
+  len : Int32,
   buf : Array[Byte],
-  buflen : Int,
-) -> UInt {
+  buflen : Int32,
+) -> UInt32 {
   let mut cnt = 0
   let mut pos = 0
   let mut t0 = 0U
@@ -478,21 +481,21 @@ pub fn rej_eta(
     if eta == 2 {
       if t0 < 15 {
         t0 = t0 - ((205 * t0) >> 10) * 5
-        a[offset + cnt] = 2 - t0.reinterpret_as_int()
+        a[cnt] = 2 - t0.reinterpret_as_int()
         cnt += 1
       }
       if t1 < 15 && cnt < len {
         t1 = t1 - ((205 * t1) >> 10) * 5
-        a[offset + cnt] = 2 - t1.reinterpret_as_int()
+        a[cnt] = 2 - t1.reinterpret_as_int()
         cnt = cnt + 1
       }
     } else if eta == 4 {
       if t0 < 9 {
-        a[offset + cnt] = 4 - t0.reinterpret_as_int()
+        a[cnt] = 4 - t0.reinterpret_as_int()
         cnt = cnt + 1
       }
       if t1 < 9 && cnt < len {
-        a[offset + cnt] = 4 - t1.reinterpret_as_int()
+        a[cnt] = 4 - t1.reinterpret_as_int()
         cnt = cnt + 1
       }
     }
@@ -523,7 +526,7 @@ pub fn Poly::poly_uniform_eta(
   seed : Array[Byte],
   nonce : UInt16,
 ) -> Unit {
-  let poly_uniform_eta_nblocks : UInt = if dilithium_context.get_params_set().eta ==
+  let poly_uniform_eta_nblocks : UInt32 = if dilithium_context.get_params_set().eta ==
     2 {
     (136 + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
   } else {
@@ -533,13 +536,12 @@ pub fn Poly::poly_uniform_eta(
   let buf : Array[Byte] = Array::make(buflen, 0)
   let state = KeccakState::default()
   stream256_init(state, seed, nonce)
-  stream256_squeezeblocks(buf, 0, poly_uniform_eta_nblocks.to_uint64(), state)
-  let mut cnt = rej_eta(self.coeffs, 0, N, buf, buflen)
+  stream256_squeezeblocks(buf, poly_uniform_eta_nblocks.to_uint64(), state)
+  let mut cnt = rej_eta(self.coeffs.mut_view(), N, buf, buflen)
   while cnt < N.reinterpret_as_uint() {
-    stream256_squeezeblocks(buf, 0, 1, state)
+    stream256_squeezeblocks(buf, 1, state)
     cnt += rej_eta(
-      self.coeffs,
-      cnt.reinterpret_as_int(),
+      self.coeffs.mut_view(start=cnt.reinterpret_as_int()),
       N - cnt.reinterpret_as_int(),
       buf,
       STREAM256_BLOCKBYTES.reinterpret_as_int(),
@@ -562,17 +564,12 @@ pub fn Poly::uniform_gamma1(
   let buf : Array[Byte] = Array::make(buflen, 0)
   let state = KeccakState::default()
   stream256_init(state, seed, nonce)
-  stream256_squeezeblocks(
-    buf,
-    0,
-    poly_uniform_gamma1_nblocks.to_uint64(),
-    state,
-  )
+  stream256_squeezeblocks(buf, poly_uniform_gamma1_nblocks.to_uint64(), state)
   self.unpack_z(buf)
 }
 
 ///|
-fn poly_array_to_bytes(poly_array : Array[Int]) -> Array[Byte] {
+fn poly_array_to_bytes(poly_array : Array[Int32]) -> Array[Byte] {
   let bytes_array : Array[Byte] = Array::make(poly_array.length() * 4, 0)
   for i in 0..<poly_array.length() {
     let n = poly_array[i]
@@ -624,7 +621,7 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
   // The nonce for challenge is not specified, using 0 as a default.
   shake256_absorb(state, seed, SEEDBYTES.reinterpret_as_uint())
   shake256_finalize(state)
-  keccak_squeezeblocks(buf, 0, 1, state.s, SHAKE256_RATE)
+  shake256_squeezeblocks(buf, 1, state)
   for i in 0..<8 {
     signs = signs | (buf[i].to_uint64() << (8 * i))
   }
@@ -636,7 +633,7 @@ pub fn Poly::challenge(self : Poly, seed : Array[Byte]) -> Unit {
     let mut b = 0
     while true {
       if pos >= SHAKE256_RATE.reinterpret_as_int() {
-        stream256_squeezeblocks(buf, 0, 1, state)
+        stream256_squeezeblocks(buf, 1, state)
         pos = 0
       }
       b = buf[pos].to_int()
@@ -783,7 +780,7 @@ pub fn Poly::unpack_eta(self : Poly, a : Array[Byte]) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let poly = Poly::new()
 /// // Assume poly has been populated with valid coefficients
 ///

@@ -1,19 +1,19 @@
 ///|
 /// test the Dilithium by KAT files
 priv struct KAT {
-  id : Int
+  id : Int32
   seed : Array[Byte]
-  mlen : Int // message length
+  mlen : Int32 // message length
   msg : Array[Byte]
   pk : Array[Byte]
   sk : Array[Byte]
-  smlen : Int // signature length
+  smlen : Int32 // signature length
   sm : Array[Byte] // signature
 }
 
 ///|
 fn string_view_to_bytes(s : StringView) -> Array[Byte] {
-  let bytes : Array[Byte] = Array::new()
+  let bytes : Array[Byte] = Array()
   let char_length = s.char_length()
   if (char_length & 1) != 0 {
     abort("String length must be even for hex conversion")
@@ -30,12 +30,12 @@ fn string_view_to_bytes(s : StringView) -> Array[Byte] {
 fn load_seed() -> Array[Array[Byte]] {
   let file_path = "kat/SeedBuffer_Dilithium"
   let content = @fs.read_file_to_string(file_path) catch {
-    err => abort(err.to_string())
+    err => abort(Repr(err).to_string())
   }
   content
   .split("\n")
   .to_array()
-  .map(line => line.to_string())
+  .map(line => line.to_owned())
   .map(hex_str_to_bytes)
 }
 
@@ -48,58 +48,52 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
   }
   let file_path = "kat/" + file_name
   let content = @fs.read_file_to_string(file_path) catch {
-    err => abort(err.to_string())
+    err => abort(Repr(err).to_string())
   }
   fn extract_value_to_bytes(line : String) -> Array[Byte] {
-    let value = line.split("=").last().unwrap().to_string()
-    let bytes = string_view_to_bytes(value.trim_space())
+    let value = line.split("=").last().unwrap().to_owned()
+    let bytes = string_view_to_bytes(value.trim())
     bytes
   }
 
-  fn extract_value_to_int(line : String) -> Int {
-    let value = line.split("=").last().unwrap().to_string()
-    let int_value = try? @strconv.parse_int(value.trim_space().to_string())
-    int_value.unwrap()
+  fn extract_value_to_int(line : String) -> Int32 {
+    let value = line.split("=").last().unwrap().to_owned()
+    @string.parse_int(value.trim()) catch {
+      err => abort(Repr(err).to_string())
+    }
   }
 
   let lines = content
     .split("\n")
-    .filter(line => not(line.is_empty()))
-    .map(line => line.to_string())
+    .filter(line => !line.is_empty())
+    .to_array()
+    .map(line => line.to_owned())
   // count, seed, mlen, msg, pk, sk, smlen, sm
   let count = lines
     .filter(line => line.has_prefix("count"))
-    .map(line => line.split("=").last().unwrap().to_string())
+    .map(line => line.split("=").last().unwrap().to_owned())
     .map(extract_value_to_int)
-    .collect()
   let seed = lines
     .filter(line => line.has_prefix("seed"))
     .map(extract_value_to_bytes)
-    .collect()
   let mlen = lines
     .filter(line => line.has_prefix("mlen"))
     .map(extract_value_to_int)
-    .collect()
   let msg = lines
     .filter(line => line.has_prefix("msg"))
     .map(extract_value_to_bytes)
-    .collect()
   let pk = lines
     .filter(line => line.has_prefix("pk"))
     .map(extract_value_to_bytes)
-    .collect()
   let sk = lines
     .filter(line => line.has_prefix("sk"))
     .map(extract_value_to_bytes)
-    .collect()
   let smlen = lines
     .filter(line => line.has_prefix("smlen"))
     .map(extract_value_to_int)
-    .collect()
   let sm = lines
     .filter(line => line.has_prefix("sm "))
     .map(extract_value_to_bytes)
-    .collect()
   let kats = []
   for i in 0..<count.length() {
     let kat = {
@@ -120,7 +114,6 @@ fn load_kat_file(level : SecurityLevel) -> Array[KAT] {
 ///|
 test "load_kat" {
   let _ = load_kat_file(SecurityLevel::Dilithium2)
-
 }
 
 ///|
@@ -134,8 +127,8 @@ test "kat-keypair" {
     let pk = kat.pk
     let sk = kat.sk
     let (pk2, sk2) = keypair_gen(Ok(seed_buffers[i]))
-    inspect(pk2, content=pk.to_string())
-    inspect(sk2, content=sk.to_string())
+    inspect(@debug.to_string(pk2), content=@debug.to_string(pk))
+    inspect(@debug.to_string(sk2), content=@debug.to_string(sk))
   }
   println("KeyPair Test Level 2: passed")
   let kats = load_kat_file(SecurityLevel::Dilithium3) // Adjust the security level as needed
@@ -145,8 +138,8 @@ test "kat-keypair" {
     let pk = kat.pk
     let sk = kat.sk
     let (pk2, sk2) = keypair_gen(Ok(seed_buffers[i]))
-    inspect(pk2, content=pk.to_string())
-    inspect(sk2, content=sk.to_string())
+    inspect(@debug.to_string(pk2), content=@debug.to_string(pk))
+    inspect(@debug.to_string(sk2), content=@debug.to_string(sk))
   }
   println("KeyPair Test Level 3: passed")
   let kats = load_kat_file(SecurityLevel::Dilithium5) // Adjust the security level as needed
@@ -156,8 +149,8 @@ test "kat-keypair" {
     let pk = kat.pk
     let sk = kat.sk
     let (pk2, sk2) = keypair_gen(Ok(seed_buffers[i]))
-    inspect(pk2, content=pk.to_string())
-    inspect(sk2, content=sk.to_string())
+    inspect(@debug.to_string(pk2), content=@debug.to_string(pk))
+    inspect(@debug.to_string(sk2), content=@debug.to_string(sk))
   }
   println("KeyPair Test Level 5: passed")
 }
@@ -189,8 +182,8 @@ test "kat-sign" {
     let msg = kat.msg
     let sk = kat.sk
     let sig = sign(msg, sk)
-    let sm = kat.sm[:sign_bytes].to_array()
-    inspect(sig, content=sm.to_string())
+    let sm = kat.sm[:sign_bytes].to_owned()
+    inspect(@debug.to_string(sig), content=@debug.to_string(sm))
   }
   println("Sign Test Level 2: passed")
   let kats = load_kat_file(SecurityLevel::Dilithium3)
@@ -201,8 +194,8 @@ test "kat-sign" {
     let msg = kat.msg
     let sk = kat.sk
     let sig = sign(msg, sk)
-    let sm = kat.sm[:sign_bytes].to_array()
-    inspect(sig, content=sm.to_string())
+    let sm = kat.sm[:sign_bytes].to_owned()
+    inspect(@debug.to_string(sig), content=@debug.to_string(sm))
   }
   println("Sign Test Level 3: passed")
   let kats = load_kat_file(SecurityLevel::Dilithium5)
@@ -213,8 +206,8 @@ test "kat-sign" {
     let msg = kat.msg
     let sk = kat.sk
     let sig = sign(msg, sk)
-    let sm = kat.sm[:sign_bytes].to_array()
-    inspect(sig, content=sm.to_string())
+    let sm = kat.sm[:sign_bytes].to_owned()
+    inspect(@debug.to_string(sig), content=@debug.to_string(sm))
   }
   println("Sign Test Level 5: passed")
 }
@@ -240,7 +233,7 @@ test "kat-verify" {
   let sign_bytes = dilithium_context.params_set.sign_bytes
   for i in 0..<kats.length() {
     let kat = kats[i]
-    let sm = kat.sm[:sign_bytes].to_array()
+    let sm = kat.sm[:sign_bytes].to_owned()
     let msg = kat.msg
     let pk = kat.pk
     let res = verify(sm, msg, pk)
@@ -252,7 +245,7 @@ test "kat-verify" {
   let sign_bytes = dilithium_context.params_set.sign_bytes
   for i in 0..<kats.length() {
     let kat = kats[i]
-    let sm = kat.sm[:sign_bytes].to_array()
+    let sm = kat.sm[:sign_bytes].to_owned()
     let msg = kat.msg
     let pk = kat.pk
     let res = verify(sm, msg, pk)
@@ -264,7 +257,7 @@ test "kat-verify" {
   let sign_bytes = dilithium_context.params_set.sign_bytes
   for i in 0..<kats.length() {
     let kat = kats[i]
-    let sm = kat.sm[:sign_bytes].to_array()
+    let sm = kat.sm[:sign_bytes].to_owned()
     let msg = kat.msg
     let pk = kat.pk
     let res = verify(sm, msg, pk)

@@ -56,32 +56,32 @@ pub const CRHBYTES = 64
 ///|
 /// Rate (block size) in bytes for the SHAKE128 extendable-output function.
 /// This determines the input block size for the Keccak sponge construction.
-pub const SHAKE128_RATE : UInt = 168
+pub const SHAKE128_RATE : UInt32 = 168
 
 ///|
 /// Rate (block size) in bytes for the SHAKE256 extendable-output function.
 /// This determines the input block size for the Keccak sponge construction.
-pub const SHAKE256_RATE : UInt = 136
+pub const SHAKE256_RATE : UInt32 = 136
 
 ///|
 /// Block size in bytes for SHAKE128-based streaming operations.
 /// Alias for SHAKE128_RATE to maintain consistency with the reference implementation.
-pub const STREAM128_BLOCKBYTES : UInt = SHAKE128_RATE
+pub const STREAM128_BLOCKBYTES : UInt32 = SHAKE128_RATE
 
 ///|
 /// Block size in bytes for SHAKE256-based streaming operations.
 /// Alias for SHAKE256_RATE to maintain consistency with the reference implementation.
-pub const STREAM256_BLOCKBYTES : UInt = SHAKE256_RATE
+pub const STREAM256_BLOCKBYTES : UInt32 = SHAKE256_RATE
 
 ///|
 /// Size in bytes for packed polynomial coefficients in the t0 representation.
 /// Used for efficient storage and transmission of polynomial data.
-pub const POLYT0_PACKEDBYTES : Int = 416
+pub const POLYT0_PACKEDBYTES : Int32 = 416
 
 ///|
 /// Size in bytes for packed polynomial coefficients in the t1 representation.
 /// Used for efficient storage and transmission of polynomial data.
-pub const POLYT1_PACKEDBYTES : Int = 320
+pub const POLYT1_PACKEDBYTES : Int32 = 320
 
 ///|
 /// Security levels supported by the Dilithium signature scheme.
@@ -124,21 +124,21 @@ pub(all) enum SecurityLevel {
 ///
 ///
 pub struct ParameterSet {
-  k : Int // s_1 dimension
-  l : Int // s_2 (error) dimension
-  eta : Int
-  tau : Int
-  beta : Int
-  gamma1 : Int // (q - 1) / 16
-  gamma2 : Int // gamma1 / 2
-  omega : Int
-  publickey_bytes : Int // seedbytes + k * t1
-  polyeta_packedbytes : Int
-  polyw1_packedbytes : Int
-  polyz_packed_bytes : Int
-  poly_uniform_gamma1_nblocks : UInt //(polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
-  polyvech_packed_bytes : Int
-  sign_bytes : Int // seedbytes + l * polyz_packed_bytes + polyvech_packed_bytes
+  k : Int32 // s_1 dimension
+  l : Int32 // s_2 (error) dimension
+  eta : Int32
+  tau : Int32
+  beta : Int32
+  gamma1 : Int32 // (q - 1) / 16
+  gamma2 : Int32 // gamma1 / 2
+  omega : Int32
+  publickey_bytes : Int32 // seedbytes + k * t1
+  polyeta_packedbytes : Int32
+  polyw1_packedbytes : Int32
+  polyz_packed_bytes : Int32
+  poly_uniform_gamma1_nblocks : UInt32 //(polyz_packed_bytes + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES
+  polyvech_packed_bytes : Int32
+  sign_bytes : Int32 // seedbytes + l * polyz_packed_bytes + polyvech_packed_bytes
   level : SecurityLevel
   features : Map[String, String] // features(i.e. "aes" not supported now)
 }
@@ -158,7 +158,7 @@ pub struct ParameterSet {
 /// dimensions, and byte sizes needed for the specified Dilithium variant.
 fn SecurityLevel::gen_paramset(
   self : SecurityLevel,
-  features? : Map[String, String] = Map::new(),
+  features~ : Map[String, String] = Map([]),
 ) -> ParameterSet {
   match self {
     SecurityLevel::Dilithium2 =>

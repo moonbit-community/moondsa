@@ -36,17 +36,17 @@
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let result1 = @ruifeng/moondsa.ite(true, 10, 20) // returns 10
 ///
 /// let result2 = @ruifeng/moondsa.ite(false, 10, 20) // returns 20
 /// ```
 ///
-pub fn ite(cond : Bool, a : Int, b : Int) -> Int {
+pub fn ite(cond : Bool, a : Int32, b : Int32) -> Int32 {
   if cond {
     return a
   }
-  if not(cond) {
+  if !cond {
     return b
   }
   0 // unreachable

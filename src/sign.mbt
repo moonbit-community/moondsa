@@ -64,7 +64,7 @@ pub fn keypair_gen(
   let rho : Array[Byte] = Array::make(SEEDBYTES, 0)
   let rhoprime : Array[Byte] = Array::make(CRHBYTES, 0)
   let key : Array[Byte] = Array::make(SEEDBYTES, 0)
-  let mat : Array[Polyvecl] = Array::new()
+  let mat : Array[Polyvecl] = Array()
   let s1 : Polyvecl = Polyvecl::default()
   let s2 : Polyveck = Polyveck::default()
   let t1 : Polyveck = Polyveck::default()
@@ -85,11 +85,11 @@ pub fn keypair_gen(
     SEEDBYTES.reinterpret_as_uint(),
   )
   rho.clear()
-  rho.append(seedbuf[0:SEEDBYTES].to_array())
+  rho.append(seedbuf[0:SEEDBYTES].to_owned())
   rhoprime.clear()
-  rhoprime.append(seedbuf[SEEDBYTES:SEEDBYTES + CRHBYTES].to_array())
+  rhoprime.append(seedbuf[SEEDBYTES:SEEDBYTES + CRHBYTES].to_owned())
   key.clear()
-  key.append(seedbuf[SEEDBYTES + CRHBYTES:].to_array())
+  key.append(seedbuf[SEEDBYTES + CRHBYTES:].to_owned())
 
   // Step 2: Construct MLWE instance
   // Expand ρ into matrix A ∈ R_q^{k×l} using SHAKE128
@@ -203,7 +203,7 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   // μ = H(tr || m) where tr = H(pk) is the public key commitment
   // This binds the signature to both the message and the public key
   let keymu : Array[Byte] = Array::make(SEEDBYTES + CRHBYTES, 0)
-  let mat : Array[Polyvecl] = Array::new()
+  let mat : Array[Polyvecl] = Array()
   let y : Polyvecl = Polyvecl::default()
   let w1 : Polyveck = Polyveck::default()
   let w0 : Polyveck = Polyveck::default()
@@ -225,13 +225,10 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
   shake256_absorb(state, tr, SEEDBYTES.reinterpret_as_uint())
   shake256_absorb(state, m, m.length().reinterpret_as_uint())
   shake256_finalize(state)
-  state.pos = keccak_squeeze(
-    keymu,
-    SEEDBYTES,
+  shake256_squeeze(
+    keymu.mut_view(start=SEEDBYTES),
     CRHBYTES.reinterpret_as_uint(),
-    state.s,
-    state.pos,
-    SHAKE256_RATE,
+    state,
   )
 
   // Step 2: Generate fresh randomness for masking
@@ -279,19 +276,12 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
     state.init()
     shake256_absorb(
       state,
-      keymu[SEEDBYTES:].to_array(),
+      keymu[SEEDBYTES:].to_owned(),
       CRHBYTES.reinterpret_as_uint(),
     )
     shake256_absorb(state, sig, (k * polyw1_packedbytes).reinterpret_as_uint())
     shake256_finalize(state)
-    state.pos = keccak_squeeze(
-      sig,
-      0,
-      SEEDBYTES.reinterpret_as_uint(),
-      state.s,
-      state.pos,
-      SHAKE256_RATE,
-    )
+    shake256_squeeze(sig.mut_view(), SEEDBYTES.reinterpret_as_uint(), state)
     cp.challenge(sig)
     cp.ntt()
 
@@ -389,6 +379,8 @@ pub fn sign(m : Array[Byte], sk : Array[Byte]) -> Array[Byte] {
 /// - Response vector z has coefficients outside bounds - potential key recovery attack
 /// - Reconstructed commitment doesn't match challenge - signature forgery attempt
 /// - Signature components don't satisfy norm constraints - malformed signature
+// Keep the published Result-returning API for existing callers.
+#warnings("-result_error_return")
 pub fn verify(
   sig : Array[Byte],
   m : Array[Byte],
@@ -405,7 +397,7 @@ pub fn verify(
   let mut c : Array[Byte] = Array::make(SEEDBYTES, 0)
   let c2 : Array[Byte] = Array::make(SEEDBYTES, 0)
   let cp = Poly::default()
-  let mat : Array[Polyvecl] = Array::new()
+  let mat : Array[Polyvecl] = Array()
   let mut z = Polyvecl::default()
   let w1 = Polyveck::default()
   let mut h = Polyveck::default()
@@ -439,14 +431,7 @@ pub fn verify(
   shake256_absorb(state, mu, SEEDBYTES.reinterpret_as_uint())
   shake256_absorb(state, m, m.length().reinterpret_as_uint())
   shake256_finalize(state)
-  state.pos = keccak_squeeze(
-    mu,
-    0,
-    CRHBYTES.reinterpret_as_uint(),
-    state.s,
-    state.pos,
-    SHAKE256_RATE,
-  )
+  shake256_squeeze(mu.mut_view(), CRHBYTES.reinterpret_as_uint(), state)
 
   // Matrix-vector multiplication; compute Az - c2^dt1
   cp.challenge(c)
@@ -472,14 +457,7 @@ pub fn verify(
   shake256_absorb(state, mu, CRHBYTES.reinterpret_as_uint())
   shake256_absorb(state, buf, (k * polyw1_packedbytes).reinterpret_as_uint())
   shake256_finalize(state)
-  state.pos = keccak_squeeze(
-    c2,
-    0,
-    SEEDBYTES.reinterpret_as_uint(),
-    state.s,
-    state.pos,
-    SHAKE256_RATE,
-  )
+  shake256_squeeze(c2.mut_view(), SEEDBYTES.reinterpret_as_uint(), state)
   // Doesn't require constant time equality check
   if c != c2 {
     Err(SignError("verify failed"))

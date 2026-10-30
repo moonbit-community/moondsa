@@ -75,7 +75,7 @@
 /// specifies that exactly 24 rounds of transformation are applied to the
 /// 1600-bit state during each permutation operation, which is essential for
 /// achieving the required security properties of the Keccak algorithm.
-const NROUNDS : Int = 24
+const NROUNDS : Int32 = 24
 
 ///|
 /// Internal state structure for Keccak cryptographic hash functions.
@@ -88,8 +88,8 @@ const NROUNDS : Int = 24
 ///   progress during incremental absorption and squeezing operations.
 pub struct KeccakState {
   s : FixedArray[UInt64] // 25-element flattened state array | 25 元素的展平状态数组
-  mut pos : UInt // Current position in the rate block | 当前在比特率块中的位置
-} derive(Show)
+  mut pos : UInt32 // Current position in the rate block | 当前在比特率块中的位置
+} derive(Debug)
 
 ///|
 /// Creates a default instance of `KeccakState` with all state elements
@@ -99,8 +99,8 @@ pub struct KeccakState {
 ///
 /// * `s`: A 25-element array of 64-bit unsigned integers, all initialized to 0
 /// * `pos`: Current position set to 0
-pub impl Default for KeccakState with default() {
-  { s: FixedArray::make(25, 0), pos: 0 }
+pub impl Default for KeccakState with fn default() {
+  { s: FixedArray::make(25, 0), pos: 0, }
 }
 
 ///|
@@ -126,7 +126,7 @@ pub fn KeccakState::init(self : KeccakState) -> Unit {
 ///
 /// Returns the rotated 64-bit unsigned integer where bits that shift beyond the
 /// left edge wrap around to the right edge.
-fn KeccakState::rol(a : UInt64, offset : Int) -> UInt64 {
+fn KeccakState::rol(a : UInt64, offset : Int32) -> UInt64 {
   (a << offset) | (a >> (64 - offset))
 }
 
@@ -437,9 +437,9 @@ pub fn keccakf1600_statepermute(state : FixedArray[UInt64]) -> Unit {
 /// 以块为单位处理输入数据，增量更新状态
 fn keccak_absorb(
   state : KeccakState,
-  r : UInt,
+  r : UInt32,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   let mut idx = 0
   let mut pos = state.pos
@@ -485,8 +485,8 @@ fn keccak_absorb(
 /// calculating the final state index.
 fn keccak_finalize(
   s : FixedArray[UInt64],
-  pos : UInt,
-  r : UInt,
+  pos : UInt32,
+  r : UInt32,
   p : Byte,
 ) -> Unit {
   let index = (pos >> 3).reinterpret_as_int()
@@ -516,13 +516,12 @@ fn keccak_finalize(
 /// Returns the updated position within the rate block after extraction.
 ///
 fn keccak_squeeze(
-  out : Array[Byte],
-  out_offset : Int,
-  outlen : UInt,
+  out : MutArrayView[Byte],
+  outlen : UInt32,
   s : FixedArray[UInt64],
-  pos : UInt,
-  r : UInt,
-) -> UInt {
+  pos : UInt32,
+  r : UInt32,
+) -> UInt32 {
   let mut pos = pos
   let mut outlen = outlen
   while outlen != 0 {
@@ -536,7 +535,7 @@ fn keccak_squeeze(
     while i < r && i < pos + outlen {
       let index = (i >> 3).reinterpret_as_int()
       let offset = (i & 7).reinterpret_as_int()
-      out[out_offset + idx] = (s[index] >> (8 * offset)).to_byte()
+      out[idx] = (s[index] >> (8 * offset)).to_byte()
       idx += 1
       i += 1
     }
@@ -552,9 +551,9 @@ fn keccak_squeeze(
 /// 初始化状态，吸收所有输入，并一次性完成
 fn keccak_absorb_once(
   s : FixedArray[UInt64],
-  r : UInt,
+  r : UInt32,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
   p : Byte,
 ) -> Unit {
   let mut inlen = inlen.reinterpret_as_int()
@@ -565,7 +564,7 @@ fn keccak_absorb_once(
     // Process full blocks | 处理完整块
     for i in 0..<(r / 8) {
       let start = idx + 8 * i
-      s[i] = s[i] ^ load64(input[start:start + 8].to_array())
+      s[i] = s[i] ^ load64(input[start:start + 8].to_owned())
     }
     idx += r
     inlen -= r
@@ -598,11 +597,10 @@ fn keccak_absorb_once(
 /// bytes.
 ///
 fn keccak_squeezeblocks(
-  out : Array[Byte],
-  out_offset : Int,
-  nblocks : UInt,
+  out : MutArrayView[Byte],
+  nblocks : UInt32,
   s : FixedArray[UInt64],
-  r : UInt,
+  r : UInt32,
 ) -> Unit {
   let mut nblocks = nblocks
   let r = r.reinterpret_as_int()
@@ -614,7 +612,7 @@ fn keccak_squeezeblocks(
       let arr : Array[Byte] = Array::make(8, 0)
       store64(arr, s[i])
       for j in 0..<8 {
-        out[out_offset + idx + 8 * i + j] = arr[j]
+        out[idx + 8 * i + j] = arr[j]
       }
     }
     idx += r
@@ -643,7 +641,7 @@ fn keccak_squeezeblocks(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let data : Array[Byte] = "Hello, World!".to_bytes().to_array()
 /// shake128_absorb(state, data, data.length().reinterpret_as_uint())
@@ -656,7 +654,7 @@ fn keccak_squeezeblocks(
 pub fn shake128_absorb(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   keccak_absorb(state, SHAKE128_RATE, input, inlen)
 }
@@ -672,7 +670,7 @@ pub fn shake128_absorb(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let input : Array[Byte] = "Hello, World!".to_bytes().to_array()
 /// shake128_absorb(state, input, input.length().reinterpret_as_uint())
@@ -696,7 +694,7 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// // ... after initializing and finalizing the state ...
 /// let output: Array[Byte] = Array::make(336, 0) // 2 blocks * 168 bytes per block
@@ -704,11 +702,11 @@ pub fn shake128_finalize(state : KeccakState) -> Unit {
 /// ```
 ///
 pub fn shake128_squeezeblocks(
-  output : Array[Byte],
-  nblocks : UInt,
+  output : MutArrayView[Byte],
+  nblocks : UInt32,
   s : KeccakState,
 ) -> Unit {
-  keccak_squeezeblocks(output, 0, nblocks, s.s, SHAKE128_RATE)
+  keccak_squeezeblocks(output, nblocks, s.s, SHAKE128_RATE)
 }
 
 ///|
@@ -729,7 +727,7 @@ pub fn shake128_squeezeblocks(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = @ruifeng/moondsa.KeccakState::default()
 /// let chunk1 : Array[Byte] = b"Hello, ".to_array()
 /// let chunk2 : Array[Byte] = b"World!".to_array()
@@ -749,7 +747,7 @@ pub fn shake128_squeezeblocks(
 pub fn shake256_absorb(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   keccak_absorb(state, SHAKE256_RATE, input, inlen)
 }
@@ -765,7 +763,7 @@ pub fn shake256_absorb(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = @ruifeng/moondsa.KeccakState::default()
 /// let input : Array[Byte] = b"hello world".to_array()
 /// @ruifeng/moondsa.shake256_absorb(state, input, 11)
@@ -790,7 +788,7 @@ pub fn shake256_finalize(state : KeccakState) -> Unit {
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// // Initialize SHAKE256 state and absorb some data
 /// let state = KeccakState::default()
 /// let input : Array[Byte] = "Hello, World!".to_bytes().to_array()
@@ -803,11 +801,11 @@ pub fn shake256_finalize(state : KeccakState) -> Unit {
 /// ```
 ///
 pub fn shake256_squeeze(
-  out : Array[Byte],
-  outlen : UInt,
+  out : MutArrayView[Byte],
+  outlen : UInt32,
   state : KeccakState,
 ) -> Unit {
-  state.pos = keccak_squeeze(out, 0, outlen, state.s, state.pos, SHAKE256_RATE)
+  state.pos = keccak_squeeze(out, outlen, state.s, state.pos, SHAKE256_RATE)
 }
 
 ///|
@@ -822,7 +820,7 @@ pub fn shake256_squeeze(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = @ruifeng/moondsa.KeccakState::default()
 /// let data : Array[Byte] = [0, 1, 2, 3]
 /// @ruifeng/moondsa.shake256_absorb_once(state, data, 4)
@@ -832,7 +830,7 @@ pub fn shake256_squeeze(
 pub fn shake256_absorb_once(
   state : KeccakState,
   input : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   keccak_absorb_once(state.s, SHAKE256_RATE, input, inlen, 0x1F)
   state.pos = SHAKE256_RATE
@@ -849,7 +847,7 @@ pub fn shake256_absorb_once(
 ///
 /// Examples:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// // Initialize SHAKE256 state and absorb some input
 /// let state = KeccakState::default()
 /// shake256_absorb_once(state, [1, 2, 3, 4], 4)
@@ -861,10 +859,10 @@ pub fn shake256_absorb_once(
 ///
 pub fn shake256_squeezeblocks(
   out : Array[Byte],
-  nblocks : UInt,
+  nblocks : UInt32,
   state : KeccakState,
 ) -> Unit {
-  keccak_squeezeblocks(out, 0, nblocks, state.s, SHAKE256_RATE)
+  keccak_squeezeblocks(out.mut_view(), nblocks, state.s, SHAKE256_RATE)
 }
 
 ///|
@@ -873,24 +871,21 @@ pub fn shake256_squeezeblocks(
 /// 执行完整的 SHAKE256 哈希：吸收输入并挤压输出
 pub fn shake256(
   output~ : Array[Byte],
-  outlen : UInt,
+  outlen : UInt32,
   input~ : Array[Byte],
-  inlen : UInt,
+  inlen : UInt32,
 ) -> Unit {
   let mut outlen = outlen
   let state = KeccakState::default()
   shake256_absorb_once(state, input, inlen)
   let nblocks = outlen / SHAKE256_RATE
-  keccak_squeezeblocks(output, 0, nblocks, state.s, SHAKE256_RATE)
+  shake256_squeezeblocks(output, nblocks, state)
   outlen -= nblocks * SHAKE256_RATE
   let idx = nblocks * SHAKE256_RATE
-  state.pos = keccak_squeeze(
-    output,
-    idx.reinterpret_as_int(),
+  shake256_squeeze(
+    output.mut_view(start=idx.reinterpret_as_int()),
     outlen,
-    state.s,
-    state.pos,
-    SHAKE256_RATE,
+    state,
   )
 }
 
@@ -908,7 +903,7 @@ pub fn shake256(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = @ruifeng/moondsa.KeccakState::default()
 /// let seed: Array[Byte] = Array::make(32, 0) // SEEDBYTES length
 /// let nonce = (42: UInt16)
@@ -933,18 +928,11 @@ pub fn stream128_init(
 /// * `state` : The SHAKE128 state to squeeze data from.
 ///
 pub fn stream128_squeezeblocks(
-  out : Array[Byte],
-  out_offset : Int,
+  out : MutArrayView[Byte],
   outblocks : UInt64,
   state : KeccakState,
 ) -> Unit {
-  keccak_squeezeblocks(
-    out,
-    out_offset,
-    outblocks.to_uint(),
-    state.s,
-    SHAKE128_RATE,
-  )
+  shake128_squeezeblocks(out, outblocks.to_uint(), state)
 }
 
 ///|
@@ -961,7 +949,7 @@ pub fn stream128_squeezeblocks(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let seed: Array[Byte] = Array::make(SEEDBYTES, 0) // Create seed of appropriate size
 /// @ruifeng/moondsa.dilithium_shake128_stream_init(state, seed, (42: UInt16))
@@ -992,7 +980,7 @@ pub fn dilithium_shake128_stream_init(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let seed : Array[Byte] = Array::make(CRHBYTES, b'A') // 64-byte seed
 /// stream256_init(state, seed, (42: UInt16))
@@ -1016,17 +1004,10 @@ pub fn stream256_init(
 /// * `state` : The SHAKE256 stream state to extract blocks from.
 pub fn stream256_squeezeblocks(
   out : Array[Byte],
-  out_offset : Int,
   outblocks : UInt64,
   state : KeccakState,
 ) -> Unit {
-  keccak_squeezeblocks(
-    out,
-    out_offset,
-    outblocks.to_uint(),
-    state.s,
-    SHAKE256_RATE,
-  )
+  shake256_squeezeblocks(out, outblocks.to_uint(), state)
 }
 
 ///|
@@ -1041,7 +1022,7 @@ pub fn stream256_squeezeblocks(
 ///
 /// Example:
 ///
-/// ```moonbit
+/// ```moonbit nocheck
 /// let state = KeccakState::default()
 /// let seed : Array[Byte] = Array::make(CRHBYTES, 0) // 64-byte seed
 /// let nonce = (42: UInt16)

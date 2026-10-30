@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/random",
+  "moonbitlang/core/string",
+  "moonbitlang/x/fs",
+}
+
+warnings = "-1-2-7"

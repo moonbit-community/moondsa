@@ -33,11 +33,11 @@ test "test_shake128_empty_16" {
   shake128_absorb(state, input, 0)
   shake128_finalize(state)
   let output : Array[Byte] = Array::make(168, 0) // SHAKE128_RATE bytes
-  shake128_squeezeblocks(output, 1, state)
+  shake128_squeezeblocks(output.mut_view(), 1, state)
 
   // NIST test vector for SHAKE128("", 16)
   let expected = "7f9c2ba4e88f827d616045507605853e"
-  let actual = bytes_to_hex(output[0:16].to_array())
+  let actual = bytes_to_hex(output[0:16].to_owned())
   inspect(actual, content=expected)
 }
 
@@ -49,9 +49,9 @@ test "test_shake128_moonbit" {
   shake128_absorb(state, input, input.length().reinterpret_as_uint())
   shake128_finalize(state)
   let output : Array[Byte] = Array::make(168, 0)
-  shake128_squeezeblocks(output, 1, state)
+  shake128_squeezeblocks(output.mut_view(), 1, state)
   let expected = "677fd5abd26006e8" // First 8 bytes
-  let actual = bytes_to_hex(output[0:8].to_array())
+  let actual = bytes_to_hex(output[0:8].to_owned())
   inspect(actual, content=expected)
 }
 
@@ -62,7 +62,7 @@ test "test_shake256_empty_16" {
   let input : Array[Byte] = []
   shake256_absorb_once(state, input, 0)
   let output : Array[Byte] = Array::make(16, 0)
-  state.pos = keccak_squeeze(output, 0, 16, state.s, state.pos, SHAKE256_RATE)
+  shake256_squeeze(output.mut_view(), 16, state)
 
   // NIST test vector for SHAKE256("", 16)
   let expected = "46b9dd2b0ba88d13233b3feb743eeb24"
@@ -77,7 +77,7 @@ test "test_shake256_moonbit" {
   let output : Array[Byte] = Array::make(64, 0)
   shake256(output~, 64, input~, input.length().reinterpret_as_uint())
   let expected = "5d8bf49503d49e78" // First 8 bytes
-  let actual = bytes_to_hex(output[0:8].to_array())
+  let actual = bytes_to_hex(output[0:8].to_owned())
   inspect(actual, content=expected)
 }
 
@@ -102,8 +102,8 @@ test "test_shake128_incremental_absorb" {
   // Both should produce same output
   let output1 : Array[Byte] = Array::make(168, 0)
   let output2 : Array[Byte] = Array::make(168, 0)
-  keccak_squeezeblocks(output1, 0, 1, state1.s, SHAKE128_RATE)
-  keccak_squeezeblocks(output2, 0, 1, state2.s, SHAKE128_RATE)
+  shake128_squeezeblocks(output1.mut_view(), 1, state1)
+  shake128_squeezeblocks(output2.mut_view(), 1, state2)
   let result1 = bytes_to_hex(output1)
   let result2 = bytes_to_hex(output2)
   inspect(result1 == result2, content="true")
@@ -119,21 +119,14 @@ test "test_shake256_incremental_squeeze" {
   // Squeeze in parts
   let part1 : Array[Byte] = Array::make(10, 0)
   let part2 : Array[Byte] = Array::make(10, 0)
-  state.pos = keccak_squeeze(part1, 0, 10, state.s, state.pos, SHAKE256_RATE)
-  state.pos = keccak_squeeze(part2, 0, 10, state.s, state.pos, SHAKE256_RATE)
+  shake256_squeeze(part1.mut_view(), 10, state)
+  shake256_squeeze(part2.mut_view(), 10, state)
 
   // Compare with one-shot squeeze
   let state2 = KeccakState::default()
   shake256_absorb_once(state2, input, input.length().reinterpret_as_uint())
   let full_output : Array[Byte] = Array::make(20, 0)
-  state2.pos = keccak_squeeze(
-    full_output,
-    0,
-    20,
-    state2.s,
-    state2.pos,
-    SHAKE256_RATE,
-  )
+  shake256_squeeze(full_output.mut_view(), 20, state2)
   let incremental_result = bytes_to_hex(part1) + bytes_to_hex(part2)
   let full_result = bytes_to_hex(full_output)
   inspect(incremental_result == full_result, content="true")
